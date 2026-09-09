@@ -1,0 +1,318 @@
+{
+  "A_logreg": {
+    "model_id": "A_logreg",
+    "dataset": "amazon",
+    "training_time_sec": 19.63,
+    "best_params": {
+      "C": 10.0
+    },
+    "cv_f1": 0.9508,
+    "validation": {
+      "accuracy": 0.9576,
+      "precision": 0.9628,
+      "recall": 0.955,
+      "f1": 0.9589,
+      "f1_macro": 0.9576,
+      "tp": 1995,
+      "fp": 77,
+      "tn": 1869,
+      "fn": 94,
+      "roc_auc": 0.9916
+    },
+    "test": {
+      "accuracy": 0.9577,
+      "precision": 0.9628,
+      "recall": 0.9528,
+      "f1": 0.9578,
+      "f1_macro": 0.9577,
+      "tp": 3879,
+      "fp": 150,
+      "tn": 3869,
+      "fn": 192,
+      "roc_auc": 0.992
+    },
+    "top_features": {
+      "top_fake": [
+        [
+          "char__. the",
+          8.15477460165792
+        ],
+        [
+          "char__.i ",
+          7.64750507306247
+        ],
+        [
+          "char__. th",
+          6.638528120469634
+        ],
+        [
+          "word__the only",
+          6.577364149076774
+        ],
+        [
+          "word__and the",
+          6.354748303376407
+        ]
+      ],
+      "top_genuine": [
+        [
+          "word__it",
+          -5.194505882564724
+        ],
+        [
+          "word__i",
+          -4.973450774767432
+        ],
+        [
+          "word__this",
+          -4.6586130491920255
+        ],
+        [
+          "word__on",
+          -4.617716222940494
+        ],
+        [
+          "word__at",
+          -4.579454840215301
+        ]
+      ]
+    }
+  },
+  "A_svm": {
+    "model_id": "A_svm",
+    "dataset": "amazon",
+    "training_time_sec": 12.85,
+    "best_params": {
+      "C": 1.0
+    },
+    "cv_f1": 0.9523,
+    "validation": {
+      "accuracy": 0.9569,
+      "precision": 0.9628,
+      "recall": 0.9536,
+      "f1": 0.9582,
+      "f1_macro": 0.9568,
+      "tp": 1992,
+      "fp": 77,
+      "tn": 1869,
+      "fn": 97,
+      "roc_auc": 0.992
+    },
+    "test": {
+      "accuracy": 0.9572,
+      "precision": 0.9614,
+      "recall": 0.9533,
+      "f1": 0.9573,
+      "f1_macro": 0.9572,
+      "tp": 3881,
+      "fp": 156,
+      "tn": 3863,
+      "fn": 190,
+      "roc_auc": 0.9921
+    },
+    "top_features": {
+      "top_fake": [
+        [
+          "char__.i ",
+          2.451238253947228
+        ],
+        [
+          "char__. the",
+          2.418762060840832
+        ],
+        [
+          "char__. th",
+          1.9230173979056862
+        ],
+        [
+          "char__. i ",
+          1.8680162958058542
+        ],
+        [
+          "word__the only",
+          1.8415623211520271
+        ]
+      ],
+      "top_genuine": [
+        [
+          "word__i",
+          -1.6376152819701064
+        ],
+        [
+          "word__it",
+          -1.5806030111992535
+        ],
+        [
+          "word__to",
+          -1.4012923480270436
+        ],
+        [
+          "word__this",
+          -1.400700384841499
+        ],
+        [
+          "word__loved the",
+          -1.3761008825622554
+        ]
+      ]
+    }
+  },
+  "B_logreg": {
+    "model_id": "B_logreg",
+    "dataset": "dosc",
+    "training_time_sec": 1.21,
+    "best_params": {
+      "C": 10.0
+    },
+    "cv_f1": 0.9078,
+    "validation": {
+      "accuracy": 0.9062,
+      "precision": 0.8824,
+      "recall": 0.9375,
+      "f1": 0.9091,
+      "f1_macro": 0.9062,
+      "tp": 75,
+      "fp": 10,
+      "tn": 70,
+      "fn": 5,
+      "roc_auc": 0.9689
+    },
+    "test": {
+      "accuracy": 0.9187,
+      "precision": 0.9295,
+      "recall": 0.9062,
+      "f1": 0.9177,
+      "f1_macro": 0.9187,
+      "tp": 145,
+      "fp": 11,
+      "tn": 149,
+      "fn": 15,
+      "roc_auc": 0.9675
+    },
+    "top_features": {
+      "top_fake": [
+        [
+          "word__chicago",
+          3.0384914655851647
+        ],
+        [
+          "word__my",
+          2.3683377347059262
+        ],
+        [
+          "word__when i",
+          1.8940465236226431
+        ],
+        [
+          "word__luxury",
+          1.8916443888971244
+        ],
+        [
+          "word__i",
+          1.7941976185584037
+        ]
+      ],
+      "top_genuine": [
+        [
+          "word__location",
+          -1.8768034884881468
+        ],
+        [
+          "word__rate",
+          -1.7268658410151003
+        ],
+        [
+          "word__4",
+          -1.6961940634962551
+        ],
+        [
+          "word__floor",
+          -1.6516336980311104
+        ],
+        [
+          "char__ - ",
+          -1.5653025168390557
+        ]
+      ]
+    }
+  },
+  "B_svm": {
+    "model_id": "B_svm",
+    "dataset": "dosc",
+    "training_time_sec": 1.16,
+    "best_params": {
+      "C": 10.0
+    },
+    "cv_f1": 0.9101,
+    "validation": {
+      "accuracy": 0.9,
+      "precision": 0.8721,
+      "recall": 0.9375,
+      "f1": 0.9036,
+      "f1_macro": 0.8999,
+      "tp": 75,
+      "fp": 11,
+      "tn": 69,
+      "fn": 5,
+      "roc_auc": 0.9677
+    },
+    "test": {
+      "accuracy": 0.9125,
+      "precision": 0.9286,
+      "recall": 0.8938,
+      "f1": 0.9108,
+      "f1_macro": 0.9125,
+      "tp": 143,
+      "fp": 11,
+      "tn": 149,
+      "fn": 17,
+      "roc_auc": 0.968
+    },
+    "top_features": {
+      "top_fake": [
+        [
+          "word__chicago",
+          1.052338327233493
+        ],
+        [
+          "word__my",
+          0.7500562699505843
+        ],
+        [
+          "word__luxury",
+          0.7205609703458206
+        ],
+        [
+          "word__when i",
+          0.6977334765138096
+        ],
+        [
+          "word__vacation",
+          0.6015882716216518
+        ]
+      ],
+      "top_genuine": [
+        [
+          "word__rate",
+          -0.7089699094747502
+        ],
+        [
+          "word__4",
+          -0.6556277738458917
+        ],
+        [
+          "word__location",
+          -0.6376494688075114
+        ],
+        [
+          "char__ - ",
+          -0.6114332540978987
+        ],
+        [
+          "word__floor",
+          -0.588233851429096
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,80 @@
+# ============================================================================
+# Cross-Dataset Fake Review Detection — Master Configuration
+# ============================================================================
+# ALL hyperparameters, paths, and seeds are defined here for reproducibility.
+
+seed: 42
+
+# --- Data Paths ---
+data:
+  amazon_raw: "data/raw/fake_reviews_dataset.csv"
+  dosc_raw: "data/raw/deceptive-opinion.csv"
+  amazon_clean: "data/processed/amazon_clean.parquet"
+  dosc_clean: "data/processed/dosc_clean.parquet"
+  amazon_splits: "data/splits/amazon_splits.json"
+  dosc_splits: "data/splits/dosc_splits.json"
+
+# --- Preprocessing ---
+preprocessing:
+  prefix_min_len: 80            # Min char prefix length for group hashing
+  test_size: 0.20               # Fraction held out for test
+  val_size: 0.10                # Fraction of (1-test) held out for validation
+
+# --- Feature Engineering ---
+tfidf:
+  word_ngram_range: [1, 2]
+  word_max_features: 30000
+  char_ngram_range: [3, 5]
+  char_max_features: 20000
+  sublinear_tf: true
+
+# --- Classical Model Hyperparameters ---
+models:
+  logreg:
+    C: [0.01, 0.1, 1.0, 10.0]
+    solver: "liblinear"
+    class_weight: "balanced"
+    max_iter: 1000
+  svm:
+    C: [0.01, 0.1, 1.0, 10.0]
+    class_weight: "balanced"
+    max_iter: 5000
+
+# --- Transformer Hyperparameters ---
+transformers:
+  bert:
+    model_name: "bert-base-uncased"
+    max_length: 256
+    batch_size: 16
+    learning_rate: 2.0e-5
+    epochs: 4
+    warmup_ratio: 0.1
+    weight_decay: 0.01
+    early_stopping_patience: 2
+  roberta:
+    model_name: "roberta-base"
+    max_length: 256
+    batch_size: 16
+    learning_rate: 2.0e-5
+    epochs: 4
+    warmup_ratio: 0.1
+    weight_decay: 0.01
+    early_stopping_patience: 2
+  dosc_overrides:
+    classifier_dropout: 0.3
+    freeze_layers: 8              # Freeze first N layers for first 2 epochs
+
+# --- Cross Evaluation ---
+cross_eval:
+  cv_folds: 5
+  interpretation_thresholds:
+    excellent: 0.05
+    moderate: 0.15
+    severe: 0.30
+
+# --- Output Paths ---
+results:
+  models_dir: "results/models"
+  metrics_dir: "results/metrics"
+  figures_dir: "results/figures"
+  logs_dir: "results/logs"

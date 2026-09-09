@@ -1,0 +1,273 @@
+[
+  {
+    "model_id": "A_logreg",
+    "family": "classical",
+    "algorithm": "logreg",
+    "source_dataset": "amazon",
+    "target_dataset": "dosc",
+    "within_eval": {
+      "accuracy": 0.9577,
+      "precision": 0.9628,
+      "recall": 0.9528,
+      "f1": 0.9578,
+      "f1_macro": 0.9577,
+      "tp": 3879,
+      "fp": 150,
+      "tn": 3869,
+      "fn": 192,
+      "roc_auc": 0.992,
+      "dataset_name": "amazon",
+      "n_samples": 8090,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 18946,
+        "overlap_count": 7104,
+        "coverage": 0.3749604138076639,
+        "oov_rate": 0.6250395861923361
+      }
+    },
+    "cross_eval": {
+      "accuracy": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f1_macro": 0.3333,
+      "tp": 0,
+      "fp": 0,
+      "tn": 160,
+      "fn": 160,
+      "roc_auc": 0.5629,
+      "dataset_name": "dosc",
+      "n_samples": 320,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 4617,
+        "overlap_count": 2894,
+        "coverage": 0.6268139484513754,
+        "oov_rate": 0.3731860515486246
+      }
+    },
+    "deltas": {
+      "delta_f1": 0.9578,
+      "delta_roc_auc": 0.4291,
+      "delta_precision": 0.9628,
+      "delta_recall": 0.9528,
+      "delta_accuracy": 0.4577,
+      "interpretation": "catastrophic_failure"
+    }
+  },
+  {
+    "model_id": "A_svm",
+    "family": "classical",
+    "algorithm": "svm",
+    "source_dataset": "amazon",
+    "target_dataset": "dosc",
+    "within_eval": {
+      "accuracy": 0.9572,
+      "precision": 0.9614,
+      "recall": 0.9533,
+      "f1": 0.9573,
+      "f1_macro": 0.9572,
+      "tp": 3881,
+      "fp": 156,
+      "tn": 3863,
+      "fn": 190,
+      "roc_auc": 0.9921,
+      "dataset_name": "amazon",
+      "n_samples": 8090,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 18946,
+        "overlap_count": 7104,
+        "coverage": 0.3749604138076639,
+        "oov_rate": 0.6250395861923361
+      }
+    },
+    "cross_eval": {
+      "accuracy": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "f1_macro": 0.3333,
+      "tp": 0,
+      "fp": 0,
+      "tn": 160,
+      "fn": 160,
+      "roc_auc": 0.5827,
+      "dataset_name": "dosc",
+      "n_samples": 320,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 4617,
+        "overlap_count": 2894,
+        "coverage": 0.6268139484513754,
+        "oov_rate": 0.3731860515486246
+      }
+    },
+    "deltas": {
+      "delta_f1": 0.9573,
+      "delta_roc_auc": 0.4094,
+      "delta_precision": 0.9614,
+      "delta_recall": 0.9533,
+      "delta_accuracy": 0.4572,
+      "interpretation": "catastrophic_failure"
+    }
+  },
+  {
+    "model_id": "B_logreg",
+    "family": "classical",
+    "algorithm": "logreg",
+    "source_dataset": "dosc",
+    "target_dataset": "amazon",
+    "within_eval": {
+      "accuracy": 0.9187,
+      "precision": 0.9295,
+      "recall": 0.9062,
+      "f1": 0.9177,
+      "f1_macro": 0.9187,
+      "tp": 145,
+      "fp": 11,
+      "tn": 149,
+      "fn": 15,
+      "roc_auc": 0.9675,
+      "dataset_name": "dosc",
+      "n_samples": 320,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 4617,
+        "overlap_count": 3072,
+        "coverage": 0.6653671215074723,
+        "oov_rate": 0.33463287849252765
+      }
+    },
+    "cross_eval": {
+      "accuracy": 0.4999,
+      "precision": 0.5155,
+      "recall": 0.1024,
+      "f1": 0.1709,
+      "f1_macro": 0.4064,
+      "tp": 417,
+      "fp": 392,
+      "tn": 3627,
+      "fn": 3654,
+      "roc_auc": 0.4452,
+      "dataset_name": "amazon",
+      "n_samples": 8090,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 18946,
+        "overlap_count": 3986,
+        "coverage": 0.2103874168689961,
+        "oov_rate": 0.7896125831310039
+      }
+    },
+    "deltas": {
+      "delta_f1": 0.7468,
+      "delta_roc_auc": 0.5223,
+      "delta_precision": 0.414,
+      "delta_recall": 0.8038,
+      "delta_accuracy": 0.4188,
+      "interpretation": "catastrophic_failure"
+    }
+  },
+  {
+    "model_id": "B_svm",
+    "family": "classical",
+    "algorithm": "svm",
+    "source_dataset": "dosc",
+    "target_dataset": "amazon",
+    "within_eval": {
+      "accuracy": 0.9125,
+      "precision": 0.9286,
+      "recall": 0.8938,
+      "f1": 0.9108,
+      "f1_macro": 0.9125,
+      "tp": 143,
+      "fp": 11,
+      "tn": 149,
+      "fn": 17,
+      "roc_auc": 0.968,
+      "dataset_name": "dosc",
+      "n_samples": 320,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 4617,
+        "overlap_count": 3072,
+        "coverage": 0.6653671215074723,
+        "oov_rate": 0.33463287849252765
+      }
+    },
+    "cross_eval": {
+      "accuracy": 0.4883,
+      "precision": 0.4603,
+      "recall": 0.0983,
+      "f1": 0.1619,
+      "f1_macro": 0.3968,
+      "tp": 400,
+      "fp": 469,
+      "tn": 3550,
+      "fn": 3671,
+      "roc_auc": 0.4343,
+      "dataset_name": "amazon",
+      "n_samples": 8090,
+      "vocab_coverage": {
+        "source_word_vocab_size": 30000,
+        "target_word_vocab_size": 18946,
+        "overlap_count": 3986,
+        "coverage": 0.2103874168689961,
+        "oov_rate": 0.7896125831310039
+      }
+    },
+    "deltas": {
+      "delta_f1": 0.7489,
+      "delta_roc_auc": 0.5337,
+      "delta_precision": 0.4683,
+      "delta_recall": 0.7955,
+      "delta_accuracy": 0.4242,
+      "interpretation": "catastrophic_failure"
+    }
+  },
+  {
+    "model_id": "B_bert",
+    "family": "transformer",
+    "algorithm": "bert",
+    "source_dataset": "dosc",
+    "target_dataset": "amazon",
+    "within_eval": {
+      "accuracy": 0.7844,
+      "precision": 0.7358,
+      "recall": 0.8875,
+      "f1": 0.8045,
+      "f1_macro": 0.7821,
+      "tp": 142,
+      "fp": 51,
+      "tn": 109,
+      "fn": 18,
+      "roc_auc": 0.8849,
+      "dataset_name": "dosc",
+      "n_samples": 320
+    },
+    "cross_eval": {
+      "accuracy": 0.5904,
+      "precision": 0.5684,
+      "recall": 0.7725,
+      "f1": 0.6549,
+      "f1_macro": 0.5755,
+      "tp": 3145,
+      "fp": 2388,
+      "tn": 1631,
+      "fn": 926,
+      "roc_auc": 0.6131,
+      "dataset_name": "amazon",
+      "n_samples": 8090
+    },
+    "deltas": {
+      "delta_f1": 0.1496,
+      "delta_roc_auc": 0.2718,
+      "delta_precision": 0.1674,
+      "delta_recall": 0.115,
+      "delta_accuracy": 0.194,
+      "interpretation": "moderate_degradation"
+    }
+  }
+]

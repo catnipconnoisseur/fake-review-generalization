@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and tests
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Data binaries & symlinks (raw datasets and heavy processed parquet)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Model checkpoints and weights (>100MB exceeds GitHub limits)
+results/models/*
+!results/models/.gitkeep
+results/logs/*
+!results/logs/.gitkeep
+
+# IDE configuration
+.vscode/
+.idea/
+*.swp

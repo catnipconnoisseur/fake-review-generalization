@@ -1,0 +1,39 @@
+{
+  "A_to_B (Amazon -> DOSC)": {
+    "total_samples": 320,
+    "total_errors": 160,
+    "error_rate": 0.5,
+    "counts": {
+      "TA": 132,
+      "LC": 27,
+      "SS": 1
+    },
+    "prevalence": {
+      "VM": 0.0,
+      "LC": 0.1688,
+      "SS": 0.0063,
+      "TA": 0.825,
+      "SD": 0.0,
+      "UK": 0.0
+    }
+  },
+  "B_to_A (DOSC -> Amazon)": {
+    "total_samples": 8090,
+    "total_errors": 4046,
+    "error_rate": 0.5001,
+    "counts": {
+      "LC": 2529,
+      "SD": 1446,
+      "SS": 50,
+      "VM": 21
+    },
+    "prevalence": {
+      "VM": 0.0052,
+      "LC": 0.6251,
+      "SS": 0.0124,
+      "TA": 0.0,
+      "SD": 0.3574,
+      "UK": 0.0
+    }
+  }
+}
