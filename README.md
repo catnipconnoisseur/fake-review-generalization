@@ -118,8 +118,8 @@ fake_review_detection/
 
 ### 6.1 Environment Setup
 ```bash
-git clone https://github.com/catnipconnoisseur/fake-review-detection.git
-cd fake-review-detection
+git clone https://github.com/catnipconnoisseur/fake-review-generalization.git
+cd fake-review-generalization
 
 python3 -m venv .venv
 source .venv/bin/activate
