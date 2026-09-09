@@ -1,6 +1,7 @@
 Model ID,Family,Algorithm,Source (Train),Target (Eval),Within F1,Cross F1,Delta F1 (Drop),Within ROC-AUC,Cross ROC-AUC,Delta ROC-AUC,Within Acc,Cross Acc,Cross Vocab Coverage,Degradation Category
 A_logreg,classical,logreg,AMAZON,DOSC,0.9578,0.0,0.9578,0.992,0.5629,0.4291,0.9577,0.5,0.6268,catastrophic_failure
 A_svm,classical,svm,AMAZON,DOSC,0.9573,0.0,0.9573,0.9921,0.5827,0.4094,0.9572,0.5,0.6268,catastrophic_failure
+A_bert,transformer,bert,AMAZON,DOSC,0.9305,0.1236,0.8069,0.9867,0.5668,0.4199,0.9265,0.5125,N/A,catastrophic_failure
 B_logreg,classical,logreg,DOSC,AMAZON,0.9177,0.1709,0.7468,0.9675,0.4452,0.5223,0.9187,0.4999,0.2104,catastrophic_failure
 B_svm,classical,svm,DOSC,AMAZON,0.9108,0.1619,0.7489,0.968,0.4343,0.5337,0.9125,0.4883,0.2104,catastrophic_failure
 B_bert,transformer,bert,DOSC,AMAZON,0.8045,0.6549,0.1496,0.8849,0.6131,0.2718,0.7844,0.5904,N/A,moderate_degradation

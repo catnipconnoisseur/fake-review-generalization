@@ -164,18 +164,40 @@ def run_forensics_pipeline(project_root: Path):
     plot_length_distributions(amazon_df, dosc_df, p3)
     print(f"  [3/8] Generated: {p3}")
 
-    # Figure 4: Confusion Matrices
+    # Figure 4: Confusion Matrices (Classical + Transformers)
     a_within_pred = a_logreg.predict(amazon_test_texts)
     a_cross_pred = a_logreg.predict(dosc_test_texts)
     b_within_pred = b_logreg.predict(dosc_test_texts)
     b_cross_pred = b_logreg.predict(amazon_test_texts)
 
     cms = {
-        "A_within": confusion_matrix(amazon_test_y, a_within_pred, labels=[0, 1]),
-        "A_cross": confusion_matrix(dosc_test_y, a_cross_pred, labels=[0, 1]),
-        "B_within": confusion_matrix(dosc_test_y, b_within_pred, labels=[0, 1]),
-        "B_cross": confusion_matrix(amazon_test_y, b_cross_pred, labels=[0, 1]),
+        "A_logreg Within (Amazon→Amazon)": confusion_matrix(amazon_test_y, a_within_pred, labels=[0, 1]),
+        "A_logreg Cross (Amazon→DOSC)": confusion_matrix(dosc_test_y, a_cross_pred, labels=[0, 1]),
+        "B_logreg Within (DOSC→DOSC)": confusion_matrix(dosc_test_y, b_within_pred, labels=[0, 1]),
+        "B_logreg Cross (DOSC→Amazon)": confusion_matrix(amazon_test_y, b_cross_pred, labels=[0, 1]),
     }
+
+    # If BERT models exist, include them in Figure 4
+    if (models_dir / "A_bert").exists():
+        try:
+            a_bert = load_model("A_bert", models_dir)
+            a_bert_within_pred = a_bert.predict(amazon_test_texts, batch_size=64)
+            a_bert_cross_pred = a_bert.predict(dosc_test_texts, batch_size=64)
+            cms["A_bert Within (Amazon→Amazon)"] = confusion_matrix(amazon_test_y, a_bert_within_pred, labels=[0, 1])
+            cms["A_bert Cross (Amazon→DOSC)"] = confusion_matrix(dosc_test_y, a_bert_cross_pred, labels=[0, 1])
+        except Exception as e:
+            print(f"  Note: Could not evaluate A_bert for Figure 4: {e}")
+
+    if (models_dir / "B_bert").exists():
+        try:
+            b_bert = load_model("B_bert", models_dir)
+            b_bert_within_pred = b_bert.predict(dosc_test_texts, batch_size=64)
+            b_bert_cross_pred = b_bert.predict(amazon_test_texts, batch_size=64)
+            cms["B_bert Within (DOSC→DOSC)"] = confusion_matrix(dosc_test_y, b_bert_within_pred, labels=[0, 1])
+            cms["B_bert Cross (DOSC→Amazon)"] = confusion_matrix(amazon_test_y, b_bert_cross_pred, labels=[0, 1])
+        except Exception as e:
+            print(f"  Note: Could not evaluate B_bert for Figure 4: {e}")
+
     p4 = figures_dir / "confusion_matrices.png"
     plot_confusion_matrices(cms, p4)
     print(f"  [4/8] Generated: {p4}")

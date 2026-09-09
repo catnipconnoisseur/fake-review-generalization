@@ -24,6 +24,8 @@ def run_transformer_training(
     project_root: Path,
     target_model: str = "B_bert",
     epochs_override: int = None,
+    sample_size: int = None,
+    max_length_override: int = None,
 ):
     print("=" * 80)
     print("  PHASE 3: TRANSFORMER FINE-TUNING PIPELINE")
@@ -37,6 +39,14 @@ def run_transformer_training(
 
     device = get_default_device()
     print(f"Hardware Acceleration Device: {device.type.upper()}")
+
+    if epochs_override is not None:
+        cfg["transformers"]["bert"]["epochs"] = epochs_override
+        cfg["transformers"]["roberta"]["epochs"] = epochs_override
+
+    if max_length_override is not None:
+        cfg["transformers"]["bert"]["max_length"] = max_length_override
+        cfg["transformers"]["roberta"]["max_length"] = max_length_override
 
     # 1. Load Data
     amazon_df = pd.read_parquet(project_root / cfg["data"]["amazon_clean"])
@@ -82,6 +92,20 @@ def run_transformer_training(
         val_sub = df.iloc[ds_info["val_idx"]]
         test_sub = df.iloc[ds_info["test_idx"]]
 
+        # Handle sample_size option for large datasets (e.g. Amazon)
+        if sample_size and len(train_sub) > sample_size:
+            if "group_id" in train_sub.columns:
+                from sklearn.model_selection import GroupShuffleSplit
+                gss = GroupShuffleSplit(n_splits=1, train_size=sample_size, random_state=cfg.get("seed", 42))
+                sample_idx, _ = next(gss.split(train_sub, train_sub["target"], groups=train_sub["group_id"]))
+                train_sub = train_sub.iloc[sample_idx]
+            else:
+                from sklearn.model_selection import StratifiedShuffleSplit
+                sss = StratifiedShuffleSplit(n_splits=1, train_size=sample_size, random_state=cfg.get("seed", 42))
+                sample_idx, _ = next(sss.split(train_sub, train_sub["target"]))
+                train_sub = train_sub.iloc[sample_idx]
+            print(f"  Subsampled training set to {len(train_sub)} samples (balanced prefix groups preserved)")
+
         train_texts = train_sub["text"].tolist()
         train_y = train_sub["target"].values.tolist()
         val_texts = val_sub["text"].tolist()
@@ -113,8 +137,11 @@ def run_transformer_training(
 
         # Evaluate on Test
         print("  Evaluating on within-dataset test split ...")
-        test_preds = model.predict(test_texts, batch_size=32)
-        test_scores = model.predict_scores(test_texts, batch_size=32)
+        if hasattr(model, "predict_and_scores"):
+            test_preds, test_scores = model.predict_and_scores(test_texts, batch_size=64)
+        else:
+            test_preds = model.predict(test_texts, batch_size=32)
+            test_scores = model.predict_scores(test_texts, batch_size=32)
         test_metrics = compute_classification_metrics(test_y, test_preds, test_scores)
 
         print(f"  Within Test Metrics -> F1: {test_metrics['f1']:.4f} | ROC-AUC: {test_metrics['roc_auc']:.4f} | Acc: {test_metrics['accuracy']:.4f}")
@@ -126,10 +153,19 @@ def run_transformer_training(
             "test_metrics": test_metrics,
         }
 
-    # Save summary
+    # Save summary (merge with existing)
     out_json = metrics_dir / "transformer_within_metrics.json"
+    existing_results = {}
+    if out_json.exists():
+        try:
+            with open(out_json, "r") as f:
+                existing_results = json.load(f)
+        except Exception:
+            existing_results = {}
+    existing_results.update(results)
+
     with open(out_json, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(existing_results, f, indent=2)
     print(f"\nSaved transformer within-dataset metrics to: {out_json}")
 
 
@@ -137,7 +173,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fine-tune transformer models.")
     parser.add_argument("--model", type=str, default="B_bert", help="Transformer model ID (B_bert, B_roberta, A_bert, A_roberta, or all)")
     parser.add_argument("--epochs", type=int, default=None, help="Optional epoch override")
+    parser.add_argument("--sample_size", type=int, default=None, help="Optional subset sample size for training")
+    parser.add_argument("--max_length", type=int, default=None, help="Optional max token length (e.g. 128)")
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parent.parent
-    run_transformer_training(project_root, target_model=args.model, epochs_override=args.epochs)
+    run_transformer_training(
+        project_root,
+        target_model=args.model,
+        epochs_override=args.epochs,
+        sample_size=args.sample_size,
+        max_length_override=args.max_length,
+    )
+

@@ -15,5 +15,22 @@
       "fn": 18,
       "roc_auc": 0.8849
     }
+  },
+  "A_bert": {
+    "model_id": "A_bert",
+    "dataset": "amazon",
+    "training_time_sec": 225.94,
+    "test_metrics": {
+      "accuracy": 0.921,
+      "precision": 0.879,
+      "recall": 0.9776,
+      "f1": 0.9257,
+      "f1_macro": 0.9207,
+      "tp": 3980,
+      "fp": 548,
+      "tn": 3471,
+      "fn": 91,
+      "roc_auc": 0.986
+    }
   }
 }

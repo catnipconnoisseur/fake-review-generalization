@@ -171,10 +171,15 @@ def train_transformer(
     weight_decay = float(t_cfg.get("weight_decay", 0.01))
     patience = int(t_cfg.get("early_stopping_patience", 2))
 
-    # DOSC specific overrides
+    # Layer freezing and dropout
     is_dosc = model_id.startswith("B_")
     dropout_prob = dosc_overrides.get("classifier_dropout", 0.3) if is_dosc else 0.1
-    freeze_layers = dosc_overrides.get("freeze_layers", 8) if is_dosc else 0
+    if is_dosc:
+        freeze_layers = dosc_overrides.get("freeze_layers", 8)
+    elif device.type == "mps":
+        freeze_layers = 6  # Accelerate MPS fine-tuning by freezing bottom 6 encoder layers
+    else:
+        freeze_layers = 0
 
     print(f"  Initializing {base_name} on device: {device}")
     tokenizer = AutoTokenizer.from_pretrained(base_name)
@@ -190,16 +195,47 @@ def train_transformer(
 
     if freeze_layers > 0:
         apply_layer_freezing(model, freeze_layers)
-        print(f"  Frozen first {freeze_layers} encoder layers (DOSC regularization)")
+        print(f"  Frozen first {freeze_layers} encoder layers (MPS / Transfer Regularization)")
 
     model.to(device)
 
-    # DataLoaders
-    train_dataset = ReviewDataset(train_texts, train_labels, tokenizer=tokenizer, max_length=max_length)
-    val_dataset = ReviewDataset(val_texts, val_labels, tokenizer=tokenizer, max_length=max_length)
+    # Pre-tokenize all texts in batch using FastTokenizer
+    print(f"  Pre-tokenizing {len(train_texts)} train & {len(val_texts)} val texts...")
+    enc_train = tokenizer(
+        [str(t) for t in train_texts],
+        truncation=True,
+        padding="max_length",
+        max_length=max_length,
+        return_tensors="pt",
+    )
+    enc_val = tokenizer(
+        [str(t) for t in val_texts],
+        truncation=True,
+        padding="max_length",
+        max_length=max_length,
+        return_tensors="pt",
+    )
+
+    from torch.utils.data import TensorDataset, Subset
+
+    train_dataset = TensorDataset(
+        enc_train["input_ids"],
+        enc_train["attention_mask"],
+        torch.tensor(train_labels, dtype=torch.long),
+    )
+    val_dataset = TensorDataset(
+        enc_val["input_ids"],
+        enc_val["attention_mask"],
+        torch.tensor(val_labels, dtype=torch.long),
+    )
+
+    # For fast validation during training, cap val set to 1000
+    val_eval_dataset = val_dataset
+    if len(val_dataset) > 1000:
+        val_eval_dataset = Subset(val_dataset, list(range(1000)))
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_eval_dataset, batch_size=batch_size * 2, shuffle=False)
 
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
@@ -223,10 +259,10 @@ def train_transformer(
         model.train()
         total_train_loss = 0.0
 
-        for step, batch in enumerate(train_loader):
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            labels = batch["labels"].to(device)
+        for step, (b_input_ids, b_mask, b_labels) in enumerate(train_loader):
+            input_ids = b_input_ids.to(device)
+            attention_mask = b_mask.to(device)
+            labels = b_labels.to(device)
 
             optimizer.zero_grad()
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
@@ -236,7 +272,15 @@ def train_transformer(
             optimizer.step()
             scheduler.step()
 
+            if device.type == "mps":
+                torch.mps.synchronize()
+                if (step + 1) % 25 == 0:
+                    torch.mps.empty_cache()
+
             total_train_loss += loss.item()
+
+            if (step + 1) % 25 == 0 or (step + 1) == len(train_loader):
+                print(f"    Epoch {epoch}/{epochs} | Step {step+1}/{len(train_loader)} | Batch Loss: {loss.item():.4f}")
 
         avg_train_loss = total_train_loss / len(train_loader)
 
@@ -244,16 +288,18 @@ def train_transformer(
         model.eval()
         val_preds = []
         val_scores = []
+        val_true = []
         with torch.no_grad():
-            for batch in val_loader:
-                input_ids = batch["input_ids"].to(device)
-                attention_mask = batch["attention_mask"].to(device)
+            for b_input_ids, b_mask, b_y in val_loader:
+                input_ids = b_input_ids.to(device)
+                attention_mask = b_mask.to(device)
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask)
                 probs = torch.softmax(outputs.logits, dim=1).cpu().numpy()
                 val_preds.extend(np.argmax(probs, axis=1))
                 val_scores.extend(probs[:, 1])
+                val_true.extend(b_y.numpy())
 
-        val_metrics = compute_classification_metrics(val_labels, val_preds, val_scores)
+        val_metrics = compute_classification_metrics(val_true, val_preds, val_scores)
         cur_f1 = val_metrics["f1"]
 
         print(f"  Epoch {epoch}/{epochs} | Train Loss: {avg_train_loss:.4f} | Val F1: {cur_f1:.4f} | Val ROC-AUC: {val_metrics['roc_auc']:.4f}")

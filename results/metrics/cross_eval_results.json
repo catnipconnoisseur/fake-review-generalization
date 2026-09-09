@@ -114,6 +114,49 @@
     }
   },
   {
+    "model_id": "A_bert",
+    "family": "transformer",
+    "algorithm": "bert",
+    "source_dataset": "amazon",
+    "target_dataset": "dosc",
+    "within_eval": {
+      "accuracy": 0.9265,
+      "precision": 0.8876,
+      "recall": 0.9776,
+      "f1": 0.9305,
+      "f1_macro": 0.9262,
+      "tp": 3980,
+      "fp": 504,
+      "tn": 3515,
+      "fn": 91,
+      "roc_auc": 0.9867,
+      "dataset_name": "amazon",
+      "n_samples": 8090
+    },
+    "cross_eval": {
+      "accuracy": 0.5125,
+      "precision": 0.6111,
+      "recall": 0.0688,
+      "f1": 0.1236,
+      "f1_macro": 0.393,
+      "tp": 11,
+      "fp": 7,
+      "tn": 153,
+      "fn": 149,
+      "roc_auc": 0.5668,
+      "dataset_name": "dosc",
+      "n_samples": 320
+    },
+    "deltas": {
+      "delta_f1": 0.8069,
+      "delta_roc_auc": 0.4199,
+      "delta_precision": 0.2765,
+      "delta_recall": 0.9088,
+      "delta_accuracy": 0.414,
+      "interpretation": "catastrophic_failure"
+    }
+  },
+  {
     "model_id": "B_logreg",
     "family": "classical",
     "algorithm": "logreg",

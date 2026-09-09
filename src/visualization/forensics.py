@@ -142,24 +142,33 @@ def plot_confusion_matrices(
     cms: Dict[str, np.ndarray],
     output_path: Path,
 ) -> None:
-    """Plot 2x2 grid of confusion matrices comparing within vs. cross transfer."""
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    """Plot multi-panel grid of confusion matrices comparing within vs. cross transfer."""
+    valid_items = [(k, v) for k, v in cms.items() if v is not None]
+    n_items = len(valid_items)
+    if n_items <= 4:
+        nrows, ncols = 2, 2
+        figsize = (10, 8)
+    elif n_items <= 6:
+        nrows, ncols = 2, 3
+        figsize = (14, 8)
+    else:
+        nrows, ncols = 2, 4
+        figsize = (18, 8)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+    axes_flat = axes.flat if hasattr(axes, "flat") else [axes]
     labels = ["Genuine (0)", "Fake (1)"]
 
-    keys = [
-        ("A_logreg Within (Amazon → Amazon)", cms.get("A_within")),
-        ("A_logreg Cross  (Amazon → DOSC)", cms.get("A_cross")),
-        ("B_logreg Within (DOSC → DOSC)", cms.get("B_within")),
-        ("B_logreg Cross  (DOSC → Amazon)", cms.get("B_cross")),
-    ]
+    for ax, (title, cm) in zip(axes_flat, valid_items):
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, ax=ax,
+                    xticklabels=labels, yticklabels=labels)
+        ax.set_title(title, fontweight="bold", fontsize=10)
+        ax.set_xlabel("Predicted Label", fontsize=9)
+        ax.set_ylabel("True Label", fontsize=9)
 
-    for ax, (title, cm) in zip(axes.flat, keys):
-        if cm is not None:
-            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, ax=ax,
-                        xticklabels=labels, yticklabels=labels)
-            ax.set_title(title, fontweight="bold", fontsize=10)
-            ax.set_xlabel("Predicted Label")
-            ax.set_ylabel("True Label")
+    # Hide any unused axes
+    for ax in axes_flat[len(valid_items):]:
+        ax.axis("off")
 
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
