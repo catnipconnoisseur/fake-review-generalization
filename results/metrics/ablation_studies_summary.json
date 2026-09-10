@@ -1,0 +1,207 @@
+{
+  "timestamp": "2026-09-10T14:27:27.720806",
+  "ablation_1_entity_masking": {
+    "original_within": {
+      "precision": 0.9295,
+      "recall": 0.9062,
+      "f1": 0.9177,
+      "roc_auc": 0.9675
+    },
+    "original_cross": {
+      "precision": 0.5155,
+      "recall": 0.1024,
+      "f1": 0.1709,
+      "roc_auc": 0.4452
+    },
+    "masked_within": {
+      "precision": 0.9221,
+      "recall": 0.8875,
+      "f1": 0.9045,
+      "roc_auc": 0.9673
+    },
+    "masked_cross": {
+      "precision": 0.5227,
+      "recall": 0.0678,
+      "f1": 0.12,
+      "roc_auc": 0.4447
+    },
+    "delta_cross_f1": -0.0509,
+    "delta_cross_roc_auc": -0.0005,
+    "total_entities_masked": 3200,
+    "best_C": 10.0,
+    "cv_f1": 0.898,
+    "chicago_removed_from_top20": true
+  },
+  "ablation_2_threshold_calibration": {
+    "models": [
+      {
+        "model_id": "A_logreg",
+        "source": "Amazon",
+        "tau_star": 0.5022,
+        "j_max": 0.9154,
+        "within_default": {
+          "threshold": 0.5,
+          "precision": 0.9628,
+          "recall": 0.9528,
+          "f1": 0.9578,
+          "roc_auc": 0.992,
+          "n_pred_positive": 4029,
+          "n_total": 8090
+        },
+        "within_optimal": {
+          "threshold": 0.5022,
+          "precision": 0.963,
+          "recall": 0.9526,
+          "f1": 0.9578,
+          "roc_auc": 0.992,
+          "n_pred_positive": 4027,
+          "n_total": 8090
+        },
+        "cross_default": {
+          "threshold": 0.5,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "roc_auc": 0.5629,
+          "n_pred_positive": 0,
+          "n_total": 320
+        },
+        "cross_optimal": {
+          "threshold": 0.5022,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "roc_auc": 0.5629,
+          "n_pred_positive": 0,
+          "n_total": 320
+        }
+      },
+      {
+        "model_id": "B_logreg",
+        "source": "DOSC",
+        "tau_star": 0.5552,
+        "j_max": 0.8375,
+        "within_default": {
+          "threshold": 0.5,
+          "precision": 0.9295,
+          "recall": 0.9062,
+          "f1": 0.9177,
+          "roc_auc": 0.9675,
+          "n_pred_positive": 156,
+          "n_total": 320
+        },
+        "within_optimal": {
+          "threshold": 0.5552,
+          "precision": 0.9375,
+          "recall": 0.8438,
+          "f1": 0.8882,
+          "roc_auc": 0.9675,
+          "n_pred_positive": 144,
+          "n_total": 320
+        },
+        "cross_default": {
+          "threshold": 0.5,
+          "precision": 0.5155,
+          "recall": 0.1024,
+          "f1": 0.1709,
+          "roc_auc": 0.4452,
+          "n_pred_positive": 809,
+          "n_total": 8090
+        },
+        "cross_optimal": {
+          "threshold": 0.5552,
+          "precision": 0.5167,
+          "recall": 0.0646,
+          "f1": 0.1148,
+          "roc_auc": 0.4452,
+          "n_pred_positive": 509,
+          "n_total": 8090
+        }
+      },
+      {
+        "model_id": "A_bert",
+        "source": "Amazon",
+        "tau_star": 0.9362,
+        "j_max": 0.8858,
+        "within_default": {
+          "threshold": 0.5,
+          "precision": 0.8876,
+          "recall": 0.9776,
+          "f1": 0.9305,
+          "roc_auc": 0.9867,
+          "n_pred_positive": 4484,
+          "n_total": 8090
+        },
+        "within_optimal": {
+          "threshold": 0.9362,
+          "precision": 0.9316,
+          "recall": 0.957,
+          "f1": 0.9441,
+          "roc_auc": 0.9867,
+          "n_pred_positive": 4182,
+          "n_total": 8090
+        },
+        "cross_default": {
+          "threshold": 0.5,
+          "precision": 0.6111,
+          "recall": 0.0688,
+          "f1": 0.1236,
+          "roc_auc": 0.5668,
+          "n_pred_positive": 18,
+          "n_total": 320
+        },
+        "cross_optimal": {
+          "threshold": 0.9362,
+          "precision": 0.6,
+          "recall": 0.0375,
+          "f1": 0.0706,
+          "roc_auc": 0.5668,
+          "n_pred_positive": 10,
+          "n_total": 320
+        }
+      },
+      {
+        "model_id": "B_bert",
+        "source": "DOSC",
+        "tau_star": 0.7415,
+        "j_max": 0.65,
+        "within_default": {
+          "threshold": 0.5,
+          "precision": 0.7358,
+          "recall": 0.8875,
+          "f1": 0.8045,
+          "roc_auc": 0.8849,
+          "n_pred_positive": 193,
+          "n_total": 320
+        },
+        "within_optimal": {
+          "threshold": 0.7415,
+          "precision": 0.8489,
+          "recall": 0.7375,
+          "f1": 0.7893,
+          "roc_auc": 0.8849,
+          "n_pred_positive": 139,
+          "n_total": 320
+        },
+        "cross_default": {
+          "threshold": 0.5,
+          "precision": 0.5684,
+          "recall": 0.7725,
+          "f1": 0.6549,
+          "roc_auc": 0.6131,
+          "n_pred_positive": 5533,
+          "n_total": 8090
+        },
+        "cross_optimal": {
+          "threshold": 0.7415,
+          "precision": 0.5923,
+          "recall": 0.4461,
+          "f1": 0.5089,
+          "roc_auc": 0.6131,
+          "n_pred_positive": 3066,
+          "n_total": 8090
+        }
+      }
+    ]
+  }
+}
