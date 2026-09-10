@@ -11,7 +11,7 @@
 
 > **Tugas Akhir / Undergraduate Thesis Project**  
 > Author: Tiffany Christabel Anggriawan  
-> Program Studi Informatika, Universitas Ciputra Surabaya
+> Information Systems for Business, Universitas Ciputra Surabaya
 
 ---
 

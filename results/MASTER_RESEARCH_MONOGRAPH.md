@@ -5,7 +5,7 @@
 ---
 
 **Author**: Tiffany Christabel Anggriawan  
-**Affiliation**: Program Studi Informatika, Universitas Ciputra Surabaya  
+**Affiliation**: Information Systems for Business, Universitas Ciputra Surabaya  
 **Date**: September 2026  
 **Repository**: `github.com/[user]/fake-review-generalization`  
 **Commit Hash**: `12efb83a2691a77b0d2d1de0217e26b5989c77df`  
