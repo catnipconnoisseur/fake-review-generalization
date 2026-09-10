@@ -7,98 +7,73 @@
 **Author**: Tiffany Christabel Anggriawan  
 **Affiliation**: Information Systems for Business, Universitas Ciputra Surabaya  
 **Date**: September 2026  
-**Repository**: `github.com/[user]/fake-review-generalization`  
-**Commit Hash**: `12efb83a2691a77b0d2d1de0217e26b5989c77df`  
+**Repository**: `github.com/catnipconnoisseur/fake-review-generalization`  
 **Verification**: 48/48 unit tests passed | 18/18 empirical checks passed | 2/2 ablation studies completed
 
 ---
 
-## Table of Contents
-
-1. [Research Metadata & Executive Context](#section-1-research-metadata--executive-context)
-2. [Data Provenance, Hygiene & Leakage-Quarantine Protocol](#section-2-data-provenance-hygiene--leakage-quarantine-protocol)
-3. [Modeling Architecture & Experimental Design](#section-3-modeling-architecture--experimental-design)
-4. [Comprehensive Empirical Results & Transfer Matrix](#section-4-comprehensive-empirical-results--transfer-matrix)
-5. [Mathematical Forensic Discoveries & Failure Mechanism Proofs](#section-5-mathematical-forensic-discoveries--failure-mechanism-proofs)
-6. [Preemptive Defense Ablation Studies](#section-6-preemptive-defense-ablation-studies)
-7. [Complete Adversarial Defense Q&A Suite](#section-7-complete-adversarial-defense-qa-suite)
-8. [Ready-to-Publish Chapters for Thesis Insertion](#section-8-ready-to-publish-chapters-for-thesis-insertion)
+# ═══════════════════════════════════════════════════════════════
+# PART I: KEY DECISIONS & FINDINGS (ENGLISH)
+# ═══════════════════════════════════════════════════════════════
 
 ---
 
-# Section 1: Research Metadata & Executive Context
+## 1. Research Problem & Motivation
 
-## 1.1 Problem Statement
+**Core Question**: Can a fake review detection model trained on one type of fraud (AI-generated or human-written) generalize to detect the other type?
 
-The global e-commerce ecosystem faces a dual-origin fake review crisis that conventional detection systems are not equipped to handle:
+**Why This Matters**:
+- E-commerce platforms face two distinct fraud modalities: AI-generated fake reviews (GPT-2, GPT-4, LLaMA) and human-written deceptive reviews (crowdsourced syndicates, paid buzzer rings).
+- Most published models report high within-domain accuracy (F1 > 0.90) but are never tested on unseen fraud types.
+- If cross-domain generalization fails, deploying a single detector is a false sense of security.
 
-1. **AI-Generated Fake Reviews**: Large Language Models (GPT-2, GPT-4, LLaMA, Claude) can produce fluent, context-appropriate product reviews indistinguishable from authentic consumer feedback at industrial scale and near-zero marginal cost.
-2. **Human-Written Deceptive Reviews**: Crowdsourced fraud syndicates on platforms like Amazon Mechanical Turk and Fiverr produce deliberately deceptive reviews that exploit human psychological credibility cues.
+**Research Questions**:
 
-These two fraud modalities operate through **fundamentally different linguistic mechanisms**: AI-generated reviews exhibit statistical fluency artifacts (template patterns, lexical uniformity), while human-written deceptive reviews deploy psychological deception strategies (self-referential narrative fabrication, emotional intensification, spatial detail padding).
-
-**The critical unanswered question**: Can a detection model trained on one fraud modality generalize to detect the other? If not, what are the precise mathematical failure mechanisms, and what architectural remedies exist?
-
-## 1.2 Research Objectives & Core Questions
-
-| ID | Research Question | Operationalization |
-|----|------------------|--------------------|
-| **RQ1** | Do detection models trained on AI-generated fake reviews generalize to human-deceptive fake reviews, and vice versa? | 6-model symmetric cross-dataset transfer matrix with ΔF1 and ΔROC-AUC metrics |
-| **RQ2** | What are the specific linguistic failure modes causing cross-dataset performance degradation? | Feature weight analysis, error taxonomy classification, psycholinguistic marker extraction |
-| **RQ3** | Can transformer-based contextual representations mitigate cross-domain failure better than surface-level TF-IDF features? | Comparative transfer analysis: BERT vs. LogReg/SVM across identical evaluation splits |
-
-## 1.3 The Methodological Pivot
-
-### 1.3.1 Why the Indonesian 75K Zenodo Dataset Was Rejected
-
-During the initial research design phase, the candidate first-choice dataset was a 75,000-row Indonesian-language review corpus from Zenodo containing Tokopedia product reviews. Forensic data audit uncovered **catastrophic data quality issues**:
-
-1. **100% Target Leakage via `verified_purchase` Column**: The `verified_purchase` boolean perfectly separated real vs. fake reviews, meaning any classifier would trivially achieve F1 ≈ 1.0 without learning any linguistic features—a fatal methodological flaw.
-2. **100% Target Leakage via `source` Column**: The `source` field (API scrape vs. manual entry) functioned as a direct proxy for the label, creating an additional leakage channel.
-3. **126 Cross-Fold Exact Duplicates**: Identical review texts appeared across train/test splits, inflating reported metrics beyond their true generalization capability.
-4. **No Deception Ground Truth**: The "fake" labels were algorithmically assigned based on metadata heuristics, not verified deception intent.
-
-These issues rendered the dataset **scientifically unusable** for studying deception detection. The research pivoted to two internationally benchmarked, peer-reviewed datasets with verified provenance.
-
-### 1.3.2 The Comparative Paradigm: AI Fraud vs. Human Deception
-
-The pivoted design creates a controlled natural experiment: two datasets from different deception paradigms, evaluated through symmetric cross-domain transfer to isolate the generalization gap.
+| ID | Question |
+|----|----------|
+| RQ1 | Do detection models trained on AI-generated fake reviews generalize to human-deceptive reviews, and vice versa? |
+| RQ2 | What are the specific linguistic failure modes causing cross-dataset performance degradation? |
+| RQ3 | Can transformer-based contextual representations (BERT) mitigate cross-domain failure better than surface-level TF-IDF features? |
 
 ---
 
-# Section 2: Data Provenance, Hygiene & Leakage-Quarantine Protocol
+## 2. Key Decision: Dataset Selection & The Zenodo Rejection
 
-## 2.1 Dataset A: Amazon Synthetic Reviews (GPT-2)
+### Decision: Reject the 75K Indonesian Zenodo Dataset
 
-| Property | Value |
-|----------|-------|
-| **Source** | Salminen et al. (2022), "Creating and Detecting Fake Reviews of Online Products" |
-| **Generation Method** | GPT-2 conditional text generation on Amazon product categories |
-| **Domain** | Multi-category Amazon e-commerce (Home & Kitchen, Electronics, etc.) |
-| **Total Rows** | 40,432 |
-| **Label Balance** | 20,216 CG (Computer Generated = fake) / 20,216 OR (Original = genuine) |
-| **Label Mapping** | CG → `target=1` (fake), OR → `target=0` (genuine) |
-| **Retained Columns** | `text`, `target`, `category`, `rating` |
-| **Leakage Risk** | Shared GPT-2 prompt templates across generated reviews |
-| **Mitigation** | 80-character prefix hashing → GroupShuffleSplit on `group_id` |
+**Original plan**: Use a 75,000-row Indonesian-language Tokopedia review dataset from Zenodo as the primary dataset.
 
-## 2.2 Dataset B: Deceptive Opinion Spam Corpus (DOSC)
+**Why it was rejected** (4 fatal flaws discovered during forensic audit):
 
-| Property | Value |
-|----------|-------|
-| **Source** | Ott et al. (2011), "Finding Deceptive Opinion Spam by Any Stretch of the Imagination" |
-| **Generation Method** | Amazon Mechanical Turk crowdworkers (deceptive) + TripAdvisor scrapes (truthful) |
-| **Domain** | Chicago hotel reviews (20 hotels × 2 polarities × 2 classes) |
-| **Total Rows** | 1,600 raw → 1,596 after deduplication (4 verified TripAdvisor scrape duplicates removed) |
-| **Label Balance** | 800 deceptive / 796 truthful |
-| **Label Mapping** | deceptive → `target=1` (fake), truthful → `target=0` (genuine) |
-| **Retained Columns** | `text`, `target`, `hotel`, `polarity` |
-| **Leakage Risk** | `source` column perfectly separates MTurk (deceptive) from TripAdvisor (truthful) |
-| **Mitigation** | `source` column **permanently dropped** at first line of ingestion |
+1. **100% target leakage via `verified_purchase`**: This boolean column perfectly separated real vs. fake labels. Any classifier would trivially achieve F1 ≈ 1.0 without learning linguistics.
+2. **100% target leakage via `source`**: The `source` field (API scrape vs. manual entry) was a direct proxy for the label.
+3. **126 cross-fold exact duplicates**: Identical texts appeared in both train and test splits, inflating metrics.
+4. **No deception ground truth**: "Fake" labels were algorithmically assigned from metadata heuristics, not verified deception intent.
 
-## 2.3 Leakage-Quarantine Protocol
+**Consequence**: The research pivoted to two internationally benchmarked, peer-reviewed English-language datasets.
 
-### 2.3.1 DOSC Source Column Elimination
+### Decision: Use Amazon Synthetic + DOSC as Controlled Comparison
+
+| Property | Dataset A: Amazon Synthetic | Dataset B: DOSC |
+|----------|---------------------------|-----------------|
+| Source paper | Salminen et al. (2022) | Ott et al. (2011) |
+| Fraud type | AI-generated (GPT-2) | Human-written (MTurk crowdworkers) |
+| Domain | Multi-category Amazon products | Chicago hotel reviews |
+| Total rows | 40,432 | 1,596 (after dedup) |
+| Balance | 20,216 fake / 20,216 genuine | 800 fake / 796 genuine |
+| Genuine source | Real Amazon reviews | TripAdvisor scrapes |
+
+**Rationale**: This pairing creates a controlled natural experiment — two datasets from fundamentally different deception paradigms, enabling isolation of the generalization gap.
+
+---
+
+## 3. Key Decision: Data Leakage Prevention
+
+### 3.1 DOSC `source` Column — Permanent Deletion
+
+**Problem**: The DOSC dataset has a `source` column that perfectly separates MTurk (deceptive) from TripAdvisor (truthful) — 100% target leakage.
+
+**Decision**: Drop `source` at the very first line of data ingestion, before any processing.
 
 ```python
 # src/data/ingest.py — Line 74-75
@@ -106,157 +81,129 @@ if "source" in df.columns:
     df = df.drop(columns=["source"])
 ```
 
-**Verification**: Column absence asserted in preprocessing script, unit tests (`test_dedup.py::test_source_column_absent`), and the verification suite (T1.4).
+**Verification**: Asserted in unit tests (`test_dedup.py::test_source_column_absent`) and verification suite (T1.4).
 
-### 2.3.2 Amazon Prefix-Group Splitting
+### 3.2 Amazon Prefix-Group Splitting — Preventing GPT-2 Template Leakage
 
-To prevent GPT-2 prompt template contamination between train/test splits:
+**Problem**: GPT-2 generates reviews from shared prompt templates. Reviews with the same template opening could leak into both train and test splits.
 
-1. Extract 80-character lowercase prefix from each review text.
-2. Hash prefixes to create `group_id` labels.
-3. Use `GroupShuffleSplit` to ensure **zero group overlap** across train/val/test.
+**Decision**: Extract 80-character lowercase prefixes → hash into `group_id` → use `GroupShuffleSplit` to ensure zero group overlap across train/val/test.
 
-```
-assert len(train_prefixes & test_prefixes) == 0  # Enforced in splitter.py
-assert len(train_prefixes & val_prefixes) == 0
-assert len(val_prefixes & test_prefixes) == 0
-```
+**Verification**:
+- Train↔Test prefix overlap: 0 groups shared
+- 50-character sliding window collision audit: 32/8,090 test = 0.40% (benign natural duplicates, not template leaks)
 
-### 2.3.3 50-Character Sliding Window Collision Audit
+### 3.3 DOSC Duplicate Removal
 
-An independent 50-character prefix collision audit found:
-- Train↔Test: 32 collisions / 8,090 test samples = **0.40%** (benign natural duplicates from different prefix groups)
-- Train↔Val: 23 collisions / 4,035 val samples = **0.57%**
+**Finding**: 4 exact-duplicate TripAdvisor scrapes found in the raw 1,600-row dataset.
 
-All collision examples are common review openings (e.g., "i bought this for my daughter who is an avid runne…"), not GPT-2 template artifacts.
-
-## 2.4 Split Distribution & Checksums
-
-| Dataset | Split | N | Label=0 | Label=1 | Ratio |
-|---------|-------|---|---------|---------|-------|
-| Amazon | Train | 28,307 | 14,140 | 14,167 | 70.0% |
-| Amazon | Val | 4,035 | 1,998 | 2,037 | 10.0% |
-| Amazon | Test | 8,090 | 4,019 | 4,071 | 20.0% |
-| DOSC | Train | 1,116 | 556 | 560 | 69.9% |
-| DOSC | Val | 160 | 80 | 80 | 10.0% |
-| DOSC | Test | 320 | 160 | 160 | 20.0% |
-
-**SHA-256 Checksums**:
-- `amazon_splits.json`: `c6147bc274eb6ea6e6ca1cabef76efed...`
-- `dosc_splits.json`: `90003c4751e69ae1ce2bcab7bffe685e...`
+**Decision**: Remove all 4 duplicates → 1,596 clean rows (800 deceptive + 796 truthful).
 
 ---
 
-# Section 3: Modeling Architecture & Experimental Design
+## 4. Key Decision: Model Architecture Choices
 
-## 3.1 Classical Baselines: Dual TF-IDF + Linear Classifiers
+### 4.1 Feature Extraction: Dual TF-IDF
 
-### 3.1.1 Feature Extraction
-
-The Dual TF-IDF Vectorizer produces a concatenated sparse representation:
-
-$$\mathbf{X} = [\mathbf{X}_{\text{word}} \| \mathbf{X}_{\text{char}}] \in \mathbb{R}^{n \times 50000}$$
+**Decision**: Concatenate word-level and character-level TF-IDF into a single sparse matrix.
 
 | Component | Analyzer | N-gram Range | Max Features | Sublinear TF |
 |-----------|----------|-------------|-------------|-------------|
 | Word TF-IDF | word | (1, 2) | 30,000 | Yes |
 | Char TF-IDF | char | (3, 5) | 20,000 | Yes |
+| **Combined** | — | — | **50,000** | — |
 
-### 3.1.2 Classifiers
+**Rationale**: Word n-grams capture semantic/lexical cues; character n-grams capture morphological/stylistic patterns and are robust to typos.
+
+### 4.2 Classical Classifiers: LogReg + LinearSVC
 
 | Algorithm | Hyperparameters | CV Strategy |
 |-----------|----------------|-------------|
-| Logistic Regression | C ∈ {0.01, 0.1, 1.0, 10.0}, solver=liblinear, class_weight=balanced | GridSearchCV, F1 scoring |
-| Linear SVC | C ∈ {0.01, 0.1, 1.0, 10.0}, class_weight=balanced, max_iter=5000 | GridSearchCV, F1 scoring |
+| Logistic Regression | C ∈ {0.01, 0.1, 1.0, 10.0}, solver=liblinear, class_weight=balanced | GridSearchCV, F1 |
+| Linear SVC | C ∈ {0.01, 0.1, 1.0, 10.0}, class_weight=balanced, max_iter=5000 | GridSearchCV, F1 |
 
-**Cross-Validation Strategy**:
-- Amazon models (A_*): `GroupKFold` (k=5) on prefix `group_id` to prevent template leakage within CV folds.
+**Key CV decision**:
+- Amazon models (A_*): `GroupKFold` (k=5) on prefix `group_id` — prevents template leakage within CV folds.
 - DOSC models (B_*): `StratifiedKFold` (k=5) with compound stratification on `target × polarity`.
 
-## 3.2 Transformer Architecture: BERT Fine-Tuning
+### 4.3 Transformer: BERT Fine-Tuning
 
-| Parameter | Amazon (A_bert) | DOSC (B_bert) |
-|-----------|----------------|---------------|
-| Base Model | bert-base-uncased | bert-base-uncased |
-| Max Length | 256 tokens | 256 tokens |
-| Batch Size | 16 | 16 |
-| Learning Rate | 2 × 10⁻⁵ | 2 × 10⁻⁵ |
-| Epochs | 4 (early stopping) | 4 (early stopping) |
-| Warmup Ratio | 0.1 | 0.1 |
-| Weight Decay | 0.01 | 0.01 |
-| Classifier Dropout | 0.1 | 0.3 |
-| Frozen Encoder Layers | 6 (MPS optimization) | 8 (overfitting prevention) |
-| Hardware | Apple Silicon MPS | Apple Silicon MPS |
+**Decision**: Use `bert-base-uncased` with different regularization strategies per dataset.
 
-## 3.3 Symmetric 6-Model Transfer Matrix Design
-
-```
-          ┌──────────────────────┐     ┌──────────────────────┐
-          │   AMAZON (GPT-2)     │     │   DOSC (MTurk)       │
-          │   40,432 reviews     │     │   1,596 reviews      │
-          └──────────┬───────────┘     └──────────┬───────────┘
-                     │                            │
-          ┌──────────▼───────────┐     ┌──────────▼───────────┐
-          │ A_logreg, A_svm,     │     │ B_logreg, B_svm,     │
-          │ A_bert               │     │ B_bert               │
-          └──────────┬───────────┘     └──────────┬───────────┘
-                     │                            │
-        ┌────────────┼────────────┐  ┌────────────┼────────────┐
-        ▼            ▼            ▼  ▼            ▼            ▼
-    Within       Cross →DOSC    Within       Cross →Amazon
-    (A→A)        (A→B)          (B→B)        (B→A)
-```
+| Parameter | Amazon (A_bert) | DOSC (B_bert) | Rationale |
+|-----------|----------------|---------------|-----------|
+| Classifier Dropout | 0.1 | **0.3** | DOSC is 25× smaller → heavier regularization |
+| Frozen Encoder Layers | 6 | **8** | Prevents overfitting on small DOSC dataset |
+| Hardware | Apple Silicon MPS | Apple Silicon MPS | Local training feasibility |
+| Max Length | 256 tokens | 256 tokens | Covers >95% of reviews |
+| Learning Rate | 2 × 10⁻⁵ | 2 × 10⁻⁵ | Standard BERT fine-tuning |
+| Epochs | 4 (early stopping) | 4 (early stopping) | — |
 
 ---
 
-# Section 4: Comprehensive Empirical Results & Transfer Matrix
+## 5. Key Decision: Symmetric Transfer Matrix Design
 
-## 4.1 Master Transfer Matrix
+**Decision**: Evaluate every model on BOTH its own test set (within-domain) AND the other dataset's test set (cross-domain).
 
-| Model ID | Family | Source (Train) | Target (Eval) | Within F1 | Cross F1 | ΔF1 (Drop) | Within AUC | Cross AUC | ΔAUC | Degradation |
-|----------|--------|---------------|---------------|-----------|----------|------------|-----------|-----------|------|-------------|
-| A_logreg | Classical | Amazon | DOSC | 0.9578 | 0.0000 | 0.9578 | 0.9920 | 0.5629 | 0.4291 | **Catastrophic** |
-| A_svm | Classical | Amazon | DOSC | 0.9573 | 0.0000 | 0.9573 | 0.9921 | 0.5827 | 0.4094 | **Catastrophic** |
-| A_bert | Transformer | Amazon | DOSC | 0.9305 | 0.1236 | 0.8069 | 0.9867 | 0.5668 | 0.4199 | **Catastrophic** |
-| B_logreg | Classical | DOSC | Amazon | 0.9177 | 0.1709 | 0.7468 | 0.9675 | 0.4452 | 0.5223 | **Catastrophic** |
-| B_svm | Classical | DOSC | Amazon | 0.9108 | 0.1619 | 0.7489 | 0.9680 | 0.4343 | 0.5337 | **Catastrophic** |
-| B_bert | Transformer | DOSC | Amazon | 0.8045 | **0.6549** | 0.1496 | 0.8849 | 0.6131 | 0.2718 | **Moderate** |
+```
+         Amazon (GPT-2)              DOSC (MTurk)
+         ┌────────────┐              ┌────────────┐
+         │ A_logreg   │              │ B_logreg   │
+         │ A_svm      │─── cross ───▶│ B_svm      │
+         │ A_bert     │◀── cross ────│ B_bert     │
+         └────────────┘              └────────────┘
+```
 
-## 4.2 Landmark Findings
+This produces 6 models × 2 evaluations = 12 data points, forming a symmetric transfer matrix.
 
-### Finding 1: Catastrophic Generalization Failure in Classical Models
-
-All four classical models (A_logreg, A_svm, B_logreg, B_svm) exhibit **ΔF1 > 0.74**, with A_logreg and A_svm achieving the extreme of **F1 = 0.0000** on DOSC (predicting ALL samples as genuine). This is not a software bug—it is a mathematically provable consequence of orthogonal feature representations.
-
-### Finding 2: Asymmetric Transformer Transferability
-
-B_bert (trained on 1,120 DOSC hotel reviews) transfers **moderately well** to Amazon with Cross F1 = 0.6549 and ΔF1 = 0.1496, while A_bert (trained on 28,307 Amazon reviews) **collapses** on DOSC with Cross F1 = 0.1236 and ΔF1 = 0.8069. This asymmetry demonstrates that:
-- Human deception patterns partially overlap with AI generation artifacts (DOSC→Amazon partially works).
-- AI generation artifacts are domain-locked and do not generalize to human deception paradigms (Amazon→DOSC fails).
-- Training set size alone does not determine transferability—feature space alignment is the dominant factor.
-
-### Finding 3: Below-Chance ROC-AUC as Rank Inversion
-
-B_logreg achieves ROC-AUC = 0.4452 on Amazon (below chance), indicating **systematic rank inversion**: the model's confidence ordering is anti-correlated with true labels. Genuine Amazon reviews are scored as more "fake" than actual fake reviews because the model learned DOSC-specific deception cues (pronouns, hotel vocabulary) that operate in the opposite direction in the Amazon feature space.
+**Degradation categories**: Excellent (ΔF1 < 0.05), Moderate (ΔF1 < 0.15), Severe (ΔF1 < 0.30), Catastrophic (ΔF1 ≥ 0.30).
 
 ---
 
-# Section 5: Mathematical Forensic Discoveries & Failure Mechanism Proofs
+## 6. Empirical Results: The Transfer Matrix
 
-## 5.1 The Feature-Distribution Mismatch (Pronoun Polarity)
+| Model | Train → Eval | Within F1 | Cross F1 | ΔF1 | Within AUC | Cross AUC | Category |
+|-------|-------------|-----------|----------|-----|-----------|-----------|----------|
+| A_logreg | Amazon → DOSC | 0.9578 | **0.0000** | 0.9578 | 0.9920 | 0.5629 | Catastrophic |
+| A_svm | Amazon → DOSC | 0.9573 | **0.0000** | 0.9573 | 0.9921 | 0.5827 | Catastrophic |
+| A_bert | Amazon → DOSC | 0.9305 | 0.1236 | 0.8069 | 0.9867 | 0.5668 | Catastrophic |
+| B_logreg | DOSC → Amazon | 0.9177 | 0.1709 | 0.7468 | 0.9675 | 0.4452 | Catastrophic |
+| B_svm | DOSC → Amazon | 0.9108 | 0.1619 | 0.7489 | 0.9680 | 0.4343 | Catastrophic |
+| B_bert | DOSC → Amazon | 0.8045 | **0.6549** | 0.1496 | 0.8849 | 0.6131 | **Moderate** |
 
-### 5.1.1 Feature Weight Sign Inversion
+### Key Findings from the Matrix
 
-The TF-IDF feature `word__i` exhibits diametrically opposite learned associations:
+1. **All classical models fail catastrophically** (ΔF1 > 0.74). A_logreg and A_svm achieve F1 = 0.0000 — predicting ALL 320 DOSC test samples as genuine.
+2. **B_bert is the only model with moderate transfer** (Cross F1 = 0.6549, ΔF1 = 0.1496).
+3. **Transfer is asymmetric**: DOSC→Amazon works better than Amazon→DOSC, despite Amazon having 25× more training data.
+4. **B_logreg ROC-AUC = 0.4452 (below chance)**: The model's confidence ranking is anti-correlated with true labels — systematic rank inversion.
+
+---
+
+## 7. Forensic Discovery #1: Feature-Distribution Mismatch (Pronoun Polarity Inversion)
+
+**The Root Cause of Catastrophic Transfer Failure**
+
+The same linguistic feature (`word__i`, first-person pronoun "I") has **opposite learned associations** in each dataset:
 
 | Feature | A_logreg (Amazon) | B_logreg (DOSC) | Δw |
 |---------|-------------------|-----------------|-----|
-| `word__i` | w = **-4.9735** (genuine cue) | w = **+1.7942** (deceptive cue) | **6.7677** |
-| `word__my` | w = **-3.8059** (genuine cue) | w = **+2.3683** (deceptive cue) | **6.1742** |
+| `word__i` | **-4.9735** (genuine cue) | **+1.7942** (deceptive cue) | **6.7677** |
+| `word__my` | **-3.8059** (genuine cue) | **+2.3683** (deceptive cue) | **6.1742** |
 
-**Interpretation**: In Amazon, 1st-person pronouns are associated with genuine consumer narratives. In DOSC, they are the hallmark of fabricated personal experience (Pennebaker's deception theory). This sign inversion means that when A_logreg encounters pronoun-rich DOSC deceptive reviews, it confidently classifies them as genuine.
+**Why this happens**:
+- In Amazon: GPT-2 generates impersonal, product-focused fake reviews. Real consumers use "I" and "my" naturally. → Pronouns = genuine.
+- In DOSC: Human deceivers fabricate personal narratives to build credibility (Pennebaker's deception theory). → Pronouns = deceptive.
+- When A_logreg encounters pronoun-rich DOSC deceptive reviews, it confidently classifies them as genuine → F1 = 0.0000.
 
-### 5.1.2 Empirical Pronoun Frequency Across Quadrants
+**Statistical confirmation (Mann-Whitney U)**:
+
+| Comparison | U | p-value | Effect Size (r) |
+|------------|---|---------|----------------|
+| Amazon: Fake vs Genuine | 2,407,497 | 2.69 × 10⁻²⁹ | +0.2037 (small) |
+| DOSC: Deceptive vs Truthful | 206,530 | 1.77 × 10⁻²¹ | -0.3266 (medium) |
+
+**Pronoun frequency across quadrants**:
 
 | Quadrant | N | Mean P1 Ratio | Std | Median |
 |----------|---|--------------|-----|--------|
@@ -265,254 +212,127 @@ The TF-IDF feature `word__i` exhibits diametrically opposite learned association
 | DOSC Deceptive (MTurk) | 560 | 0.0673 | 0.0318 | 0.0699 |
 | DOSC Truthful (TripAdvisor) | 556 | 0.0508 | 0.0267 | 0.0500 |
 
-### 5.1.3 Mann-Whitney U Statistical Confirmation
+---
 
-| Comparison | U | p-value | Effect Size (r) | Magnitude |
-|------------|---|---------|----------------|-----------|
-| Amazon: Fake vs Genuine | 2,407,497 | 2.69 × 10⁻²⁹ | +0.2037 | Small |
-| DOSC: Deceptive vs Truthful | 206,530 | 1.77 × 10⁻²¹ | -0.3266 | **Medium** |
-| Cross-Domain Fake: Amazon vs DOSC | 531,298 | 6.27 × 10⁻² | +0.0513 | Small (ns) |
-| Cross-Domain Genuine: Amazon vs DOSC | 521,494 | 2.42 × 10⁻² | +0.0621 | Small |
+## 8. Forensic Discovery #2: The F1 = 0.0000 Proof
 
-DOSC deceptive reviews are significantly pronoun-enriched relative to truthful reviews (p = 1.77 × 10⁻²¹, medium effect). Combined with A_logreg's learned weight `word__i = -4.97` (genuine cue), this produces the systematic F1 = 0.0000 collapse.
+**This is not a bug — it is mathematically inevitable.**
 
-## 5.2 The F1 = 0.0000 Mathematical Proof
+A_logreg assigns P(fake) scores to all 160 DOSC fake reviews:
 
-### 5.2.1 Kolmogorov-Smirnov Distribution Collapse
+| Statistic | Value |
+|-----------|-------|
+| Mean P(fake) | 0.0043 |
+| Median P(fake) | 0.0003 |
+| Maximum P(fake) | **0.0988** |
+| Samples below threshold (0.50) | **160/160 (100%)** |
 
-$$D_{KS} = \sup_x |F_{\text{Amazon fake}}(x) - F_{\text{DOSC fake}}(x)| = 0.9907$$
-$$p = 9.35 \times 10^{-254}$$
+**Kolmogorov-Smirnov test** (Amazon fake scores vs DOSC fake scores):
+- D_KS = 0.9907, p = 9.35 × 10⁻²⁵⁴ — virtually zero overlap between distributions.
 
-The probability distributions of P(fake) scores for Amazon fake reviews vs. DOSC fake reviews are **virtually non-overlapping** (D = 0.99), confirming complete distributional collapse.
-
-### 5.2.2 Probability Score Statistics
-
-| Subset | N | Mean P(fake) | Median | Max |
-|--------|---|-------------|--------|-----|
-| Amazon Fake (within, correct domain) | 4,071 | 0.9246 | 0.9932 | 1.0000 |
-| DOSC Fake (cross, wrong domain) | 160 | **0.0043** | **0.0003** | **0.0988** |
-
-All 160 DOSC fake reviews scored P(fake) < 0.10. The maximum score (0.0988) is still far below the 0.50 decision boundary. No threshold in [0.01, 0.99] can rescue this—the scores are concentrated near zero.
-
-### 5.2.3 Formal Proof
+**Formal proof**:
 
 $$\forall x \in \mathcal{D}_{\text{DOSC}}^{\text{fake}}: P_{\text{A\_logreg}}(\text{fake} | x) < 0.10$$
 $$\implies \hat{y}(x) = \mathbb{1}[P(\text{fake}|x) \geq \tau] = 0 \quad \forall \tau \geq 0.10$$
 $$\implies \text{TP} = 0, \quad \text{Recall} = 0, \quad F_1 = 0 \quad \blacksquare$$
 
-## 5.3 Error Taxonomy Breakdown
+No threshold in [0.01, 0.99] can rescue this — the scores are concentrated near zero.
 
-| Error Code | Description | A→B Prevalence | B→A Prevalence |
-|------------|-------------|---------------|---------------|
-| TA | Template Absence (domain-specific terms missing) | **82.5%** | 0.0% |
-| LC | Length/Complexity Mismatch | 16.9% | **62.5%** |
-| SD | Stylistic Divergence (register/vocabulary shift) | 0.0% | **35.7%** |
-| SS | Semantic Similarity (borderline cases) | 0.6% | 1.2% |
-| VM | Vocabulary Mismatch (OOV tokens) | 0.0% | 0.5% |
+**Cross-verification**: A_svm (completely different algorithm) produces the identical all-zeros prediction pattern → failure is feature-driven, not classifier-specific.
 
 ---
 
-# Section 6: Preemptive Defense Ablation Studies
+## 9. Forensic Discovery #3: Orthogonal Feature Space Geometry
 
-## 6.1 Ablation 1: Geographic & Named-Entity Confounder Masking
+**Spearman rank correlation** between A_logreg and B_logreg feature weight vectors:
+- ρ = 0.0167, R² = 0.00028
 
-### 6.1.1 Methodology
+The two models' feature importance rankings are effectively uncorrelated — they learned to look at **completely different things**. The feature spaces are orthogonal.
 
-All 21 DOSC-specific geographic entities (chicago + 20 hotel brand names) were replaced with `[LOCATION]`, resulting in 3,200 total replacements. B_logreg was retrained on the masked corpus (B_logreg_masked, C=10.0).
+---
 
-### 6.1.2 Results
+## 10. Key Finding: Asymmetric Transformer Transfer
 
-| Model | Domain | F1 | ROC-AUC |
-|-------|--------|---:|--------:|
-| B_logreg (original) | Within (DOSC→DOSC) | 0.9177 | 0.9675 |
-| B_logreg (original) | Cross (DOSC→Amazon) | 0.1709 | 0.4452 |
-| B_logreg_masked | Within (DOSC→DOSC) | 0.9045 | 0.9673 |
-| B_logreg_masked | Cross (DOSC→Amazon) | 0.1200 | 0.4447 |
+**Why B_bert (DOSC→Amazon) transfers but A_bert (Amazon→DOSC) collapses:**
 
-**Cross-domain ΔF1 = -0.0509** (masking made performance *worse*).
+| Direction | Cross F1 | Fake Recall | Genuine Recall | Explanation |
+|-----------|----------|-------------|----------------|-------------|
+| B_bert → Amazon | **0.6549** | 0.7725 | 0.4058 | Human deception patterns partially overlap with AI generation artifacts |
+| A_bert → DOSC | 0.1236 | 0.0688 | 0.9563 | AI artifacts are domain-locked; 149/160 fake reviews classified as genuine |
 
-### 6.1.3 Feature Weight Shift
+**Confusion matrices**:
 
-After masking, `word__chicago` (originally rank #1, weight 3.04) was eliminated from the feature space. However, `word__my` (rank #3, weight 2.40) and `word__i` (rank #6, weight 1.74) **remained dominant deception cues**, confirming that the transfer failure is driven by psycholinguistic features, not geographic confounders.
+A_bert on DOSC (cross-domain):
+```
+              Pred Genuine  Pred Fake
+True Genuine       153           7
+True Fake          149          11
+```
 
-### 6.1.4 Conclusion
+B_bert on Amazon (cross-domain):
+```
+              Pred Genuine  Pred Fake
+True Genuine      1631        2388
+True Fake          926        3145
+```
 
-Geographic entity masking **cannot rescue** cross-domain transfer. The Feature-Distribution Mismatch operates at the pronoun and psycholinguistic level, which is independent of topic-specific vocabulary.
+**Key insight**: Training set size alone does not determine transferability. B_bert (trained on only 1,120 samples) outperforms A_bert (trained on 28,307 samples) in cross-domain transfer because feature space alignment matters more than data volume.
 
-## 6.2 Ablation 2: Youden's J Threshold Calibration
+**Error Taxonomy**:
 
-### 6.2.1 Methodology
+| Error Type | A→B | B→A |
+|------------|-----|-----|
+| Template Absence (domain terms missing) | **82.5%** | 0.0% |
+| Length/Complexity Mismatch | 16.9% | **62.5%** |
+| Stylistic Divergence | 0.0% | **35.7%** |
+| Semantic Similarity (borderline) | 0.6% | 1.2% |
+| Vocabulary Mismatch (OOV) | 0.0% | 0.5% |
 
-For each probabilistic model, the optimal decision threshold τ* was computed on the in-domain validation split using Youden's J statistic:
+---
 
-$$J(\tau) = \text{TPR}(\tau) - \text{FPR}(\tau)$$
-$$\tau^* = \arg\max_{\tau} J(\tau)$$
+## 11. Ablation Study #1: Geographic Entity Masking
 
-### 6.2.2 Results
+**Question**: Is B_logreg's failure caused by Chicago-specific vocabulary rather than the pronoun mismatch?
+
+**Method**: Replace all 3,200 occurrences of 21 geographic entities (chicago, hilton, hyatt, etc.) with `[LOCATION]`. Retrain B_logreg.
+
+**Results**:
+
+| Model | Within F1 | Cross F1 |
+|-------|-----------|----------|
+| B_logreg (original) | 0.9177 | 0.1709 |
+| B_logreg_masked | 0.9045 | **0.1200** (ΔF1 = -0.0509, *worse*) |
+
+**Feature weight shift after masking**:
+- `word__chicago` (originally rank #1, weight 3.04) → eliminated
+- `word__my` (rank #3, weight 2.40) and `word__i` (rank #6, weight 1.74) → **remained dominant**
+
+**Conclusion**: Geographic masking cannot rescue transfer. The failure operates at the psycholinguistic level, not the topical level.
+
+---
+
+## 12. Ablation Study #2: Youden's J Threshold Calibration
+
+**Question**: Can tuning the decision threshold fix the cross-domain drop?
+
+**Method**: Compute optimal threshold τ* using Youden's J statistic: J(τ) = TPR(τ) − FPR(τ), τ* = argmax J(τ).
+
+**Results**:
 
 | Model | τ* | J_max | Cross F1 (τ=0.50) | Cross F1 (τ*) | ΔF1 |
-|-------|----|------:|-------------------:|--------------:|----:|
+|-------|----|------:|-------------------|--------------|-----|
 | A_logreg | 0.5022 | 0.9154 | 0.0000 | 0.0000 | +0.0000 |
 | B_logreg | 0.5552 | 0.8375 | 0.1709 | 0.1148 | -0.0561 |
 | A_bert | 0.9362 | 0.8858 | 0.1236 | 0.0706 | -0.0530 |
 | B_bert | 0.7415 | 0.6500 | 0.6549 | 0.5089 | -0.1460 |
 
-### 6.2.3 Conclusion
-
-Threshold calibration **failed to rescue any cross-domain model**—in fact, it made every model's cross-domain performance *worse*. This conclusively proves that the transfer failure is **representational, not decisional**: the models' internal feature representations occupy orthogonal spaces across datasets, and no threshold adjustment can bridge this fundamental mismatch.
+**Conclusion**: Threshold calibration **failed to rescue any model** — it made every model worse. The failure is **representational, not decisional**: the models' feature representations occupy orthogonal spaces across datasets, and no threshold adjustment can bridge this.
 
 ---
 
-# Section 7: Complete Adversarial Defense Q&A Suite
+## 13. Architectural Recommendation: Dual-Head Classifier
 
-## Q1: "How do you know labels were not swapped?"
-
-**Answer**: We performed an exhaustive label provenance audit (`scripts/verify_research_truth.py`, Task 1):
-
-- **20 raw→clean spot-checks**: 5 CG samples all mapped to target=1, 5 OR samples to target=0, 5 deceptive to target=1, 5 truthful to target=0. Zero mismatches.
-- **Population-level verification**: Amazon has exactly 20,216 target=1 and 20,216 target=0 (perfect 50/50). DOSC has 800 target=1 and 796 target=0 (4 truthful duplicates removed).
-- **Code-level proof**: The label mapping dictionaries in `src/data/ingest.py` are `{"CG": 1, "OR": 0}` and `{"deceptive": 1, "truthful": 0}`, followed by `assert df["target"].notna().all()` to catch any unmapped values.
-
-## Q2: "The F1 = 0.0000 result looks like a bug. How do you prove it isn't?"
-
-**Answer**: Five independent lines of evidence:
-
-1. **Prediction audit**: All 320 DOSC test predictions are class 0 (verified via `Counter`). TP=0, FP=0, TN=160, FN=160.
-2. **Probability analysis**: Maximum P(fake) across all 160 DOSC fake reviews is 0.0988. Median is 0.0003. The model is not "confused"—it is supremely confident these reviews are genuine.
-3. **KS distribution test**: The score distributions for Amazon fake vs. DOSC fake differ with D=0.9907, p=9.35×10⁻²⁵⁴—effectively zero overlap.
-4. **A_svm replication**: Linear SVC (a completely different algorithm) produces the identical all-zeros prediction pattern, confirming the phenomenon is feature-driven, not classifier-specific.
-5. **Root cause isolation**: `word__i` has weight -4.97 (strongest genuine cue). DOSC deceptive reviews have mean pronoun ratio 0.0673 (enriched relative to truthful at 0.0508, p=1.77×10⁻²¹). The model correctly applies its learned rule—it's the rule itself that doesn't transfer.
-
-## Q3: "ROC-AUC of 0.4452 is below chance. How can a trained model be worse than random?"
-
-**Answer**: ROC-AUC < 0.5 means the model's confidence ranking is **anti-correlated** with true labels—it systematically ranks genuine reviews as more suspicious than fake ones. This occurs because B_logreg learned DOSC-specific deception cues (pronouns = deceptive, hotel vocabulary = deceptive) that operate in the **opposite direction** in Amazon's feature space. The model isn't failing randomly—it's consistently wrong in a structured, invertible way. Theoretically, inverting all predictions would yield ROC-AUC = 0.5548, but this merely confirms the systematic nature of the failure, not a viable solution (since the inversion direction is unknown at deployment time).
-
-## Q4: "Didn't the model just fail because Amazon reviews aren't about Chicago hotels?"
-
-**Answer**: The geographic confounder masking ablation (Section 6.1) directly disproves this hypothesis:
-- We masked all 3,200 occurrences of `chicago` and 20 hotel brand names.
-- The retrained B_logreg_masked achieved Cross F1 = 0.1200 (ΔF1 = -0.0509 relative to original).
-- After masking, `word__my` (rank #3) and `word__i` (rank #6) remained the dominant deception cues.
-- **Conclusion**: Even after perfectly removing all geographic confounders, the transfer failure persists because the dominant failure mechanism operates at the psycholinguistic (pronoun) level, not the topical (geographic) level.
-
-## Q5: "Couldn't you just tune the decision threshold to fix the drop?"
-
-**Answer**: No. The Youden's J threshold calibration ablation (Section 6.2) proves this conclusively:
-- We computed optimal thresholds τ* for all 4 probabilistic models using Youden's J statistic on in-domain validation splits.
-- For A_logreg, the optimal threshold is τ*=0.5022 (essentially unchanged from 0.50), and Cross F1 remains exactly 0.0000 because all 160 DOSC fake reviews score P(fake) < 0.10—far below any reasonable threshold.
-- For all other models, threshold calibration **decreased** cross-domain F1 (B_bert: 0.6549 → 0.5089).
-- **Conclusion**: The failure is representational, not decisional. The models' internal feature representations occupy orthogonal spaces, and no threshold in ℝ can project one onto the other.
-
-## Q6: "GPT-2 is from 2019. Does this study still matter with GPT-4 and Claude in 2026?"
-
-**Answer**: The study's relevance has *increased*, not decreased:
-1. **The finding is about detection paradigms, not generation models**: We prove that any single-source detector fails on unseen fraud modalities. As frontier LLMs diversify fake review quality (GPT-4, Claude, Gemini, open-source models), the heterogeneity problem grows worse, not better.
-2. **GPT-2 as a controlled lower bound**: GPT-2's relatively detectable artifacts represent the *easiest* case for cross-domain generalization. If detection fails even here, it will fail more catastrophically against more sophisticated models.
-3. **The Pronoun Polarity Inversion is LLM-agnostic**: The fundamental mismatch between human deception psychology and machine generation statistics persists regardless of the specific LLM used.
-4. **Architectural prescription**: The Dual-Head Architecture recommendation (Section 8) applies to any combination of AI-generated and human-deceptive fake reviews, regardless of the specific model vintage.
-
-## Q7: "Why does BERT transfer from human to AI but not from AI to human?"
-
-**Answer**: The asymmetry has three mechanistic explanations:
-
-1. **Feature space dimensionality**: DOSC deceptive reviews employ a broader set of human deception markers (hedging, narrative fabrication, emotional intensification) that partially overlap with GPT-2's generation artifacts. Amazon GPT-2 artifacts are narrow and domain-locked (template patterns, lexical uniformity).
-2. **Contextual vs. surface features**: BERT's attention mechanism captures semantic relationships beyond bag-of-words features. B_bert learned "deception-like" semantic patterns (fabricated experience narratives) that partially activate on GPT-2's synthetic fluency. A_bert learned "synthetic-like" statistical patterns that have zero activation in genuinely human text.
-3. **Confusion matrix evidence**: B_bert maintains Fake recall=0.7725 and Genuine recall=0.4058 on Amazon (balanced discrimination). A_bert collapses to Fake recall=0.0688 on DOSC (149/160 fake reviews classified as genuine = one-sided failure).
-
-## Q8: "How does an English study help Indonesian e-commerce (Tokopedia, Shopee)?"
-
-**Answer**: The methodological and architectural contributions transfer directly:
-
-1. **The Pronoun Polarity Inversion is language-universal**: Indonesian deceptive reviews on Tokopedia/Shopee will exhibit the same pronoun enrichment (saya, aku, saya sangat suka) as English DOSC reviews, because the underlying deception psychology is cross-lingual (Pennebaker's theory has been validated across 7+ languages).
-2. **The Dual-Head Architecture blueprint** (Section 8.3) is language-agnostic: a shared encoder (IndoBERT or multilingual BERT) with domain-specific classification heads can be deployed directly on Indonesian marketplace data.
-3. **The leakage quarantine protocol** we developed (prefix hashing, source column elimination, cross-fold deduplication) serves as a direct template for Indonesian dataset construction—preventing the exact issues found in the rejected Zenodo 75K dataset.
-4. **Practical deployment**: Indonesian e-commerce platforms face both AI-generated fake reviews (from GPT-4, local LLMs) and crowdsourced human fake reviews (from paid review syndicates), making the dual-paradigm detection framework directly applicable.
-
----
-
-# Section 8: Ready-to-Publish Chapters for Thesis Insertion
-
-## 8.1 Bab 3: Metodologi Penelitian
-
-### 3.1 Desain Penelitian
-
-Penelitian ini menggunakan desain eksperimen komparatif kuantitatif dengan evaluasi transfer lintas-dataset simetris. Dua dataset ulasan palsu yang telah divalidasi secara internasional digunakan untuk melatih dan mengevaluasi enam model deteksi, menghasilkan matriks transfer 6-model yang mengukur kemampuan generalisasi lintas paradigma penipuan.
-
-### 3.2 Dataset dan Preprocessing
-
-Dataset A (Amazon Synthetic Reviews) berisi 40.432 ulasan produk e-commerce, dengan 20.216 ulasan asli (Original/OR) dan 20.216 ulasan palsu yang dihasilkan oleh GPT-2 (Computer Generated/CG) dari studi Salminen et al. (2022). Dataset B (Deceptive Opinion Spam Corpus/DOSC) berisi 1.596 ulasan hotel di Chicago, dengan 800 ulasan palsu yang ditulis oleh pekerja Amazon Mechanical Turk dan 796 ulasan asli dari TripAdvisor, berdasarkan studi Ott et al. (2011).
-
-Protokol karantina kebocoran data diterapkan secara ketat:
-1. Kolom `source` pada DOSC dihapus secara permanen pada baris pertama proses ingesti karena memisahkan kelas target secara sempurna (MTurk = deceptive, TripAdvisor = truthful), menyebabkan kebocoran target 100%.
-2. Empat duplikat scrape TripAdvisor yang terverifikasi dihilangkan, menghasilkan 1.596 baris bersih.
-3. Prefix hashing 80-karakter diterapkan pada dataset Amazon untuk menciptakan `group_id` yang digunakan dalam `GroupShuffleSplit`, memastikan nol tumpang tindih template GPT-2 antar split train/val/test.
-
-### 3.3 Arsitektur Model
-
-Model klasikal menggunakan Dual TF-IDF Vectorizer yang menggabungkan representasi kata n-gram (1,2) dengan maksimum 30.000 fitur dan karakter n-gram (3,5) dengan maksimum 20.000 fitur, keduanya dengan penskalaan `sublinear_tf=True`. Matriks fitur gabungan (hingga 50.000 dimensi) dilatih menggunakan Logistic Regression dan Linear SVC dengan pencarian grid hiperparameter melalui validasi silang 5-fold.
-
-Model transformer menggunakan `bert-base-uncased` yang di-fine-tune dengan akselerasi Apple Silicon MPS, early stopping berdasarkan F1 validasi, pembekuan lapisan encoder (6 lapisan untuk Amazon, 8 lapisan untuk DOSC), dan regularisasi dropout 0.3 pada classifier head untuk dataset DOSC yang berukuran kecil.
-
-### 3.4 Evaluasi Lintas-Dataset
-
-Setiap model dievaluasi pada dua kondisi: (1) evaluasi dalam-domain (within) pada test split dari dataset pelatihannya, dan (2) evaluasi lintas-domain (cross) pada seluruh test split dari dataset lawan. Metrik utama meliputi F1-score, ROC-AUC, presisi, recall, dan kategori degradasi (excellent: ΔF1 < 0.05, moderate: ΔF1 < 0.15, severe: ΔF1 < 0.30, catastrophic: ΔF1 ≥ 0.30).
-
----
-
-## 8.2 Bab 4: Hasil dan Pembahasan
-
-### 4.1 Matriks Transfer Lintas-Dataset
-
-Tabel 4.1 menyajikan hasil evaluasi lengkap dari enam model deteksi pada matriks transfer simetris.
-
-| Model | Sumber | Target | Within F1 | Cross F1 | ΔF1 | Within AUC | Cross AUC | Kategori |
-|-------|--------|--------|-----------|----------|-----|-----------|-----------|----------|
-| A_logreg | Amazon | DOSC | 0.9578 | 0.0000 | 0.9578 | 0.9920 | 0.5629 | Katastrofik |
-| A_svm | Amazon | DOSC | 0.9573 | 0.0000 | 0.9573 | 0.9921 | 0.5827 | Katastrofik |
-| A_bert | Amazon | DOSC | 0.9305 | 0.1236 | 0.8069 | 0.9867 | 0.5668 | Katastrofik |
-| B_logreg | DOSC | Amazon | 0.9177 | 0.1709 | 0.7468 | 0.9675 | 0.4452 | Katastrofik |
-| B_svm | DOSC | Amazon | 0.9108 | 0.1619 | 0.7489 | 0.9680 | 0.4343 | Katastrofik |
-| B_bert | DOSC | Amazon | 0.8045 | 0.6549 | 0.1496 | 0.8849 | 0.6131 | Moderat |
-
-Temuan utama dari matriks transfer ini adalah kegagalan generalisasi katastrofik pada seluruh model klasikal (ΔF1 > 0.74), dengan A_logreg dan A_svm mencapai F1 = 0.0000 pada DOSC—artinya kedua model memprediksi seluruh 320 sampel uji sebagai kelas genuine (asli). Satu-satunya model yang menunjukkan transfer moderat adalah B_bert dengan Cross F1 = 0.6549.
-
-### 4.2 Analisis Mekanisme Kegagalan: Feature-Distribution Mismatch
-
-Akar penyebab kegagalan transfer teridentifikasi sebagai Feature-Distribution Mismatch, khususnya inversi polaritas pronomina. Model A_logreg mempelajari fitur `word__i` dengan bobot -4.9735 (indikator genuine yang kuat), sementara model B_logreg mempelajari fitur yang sama dengan bobot +1.7942 (indikator deceptive yang kuat). Perbedaan bobot sebesar Δw = 6.7677 ini menunjukkan bahwa kedua model menginterpretasikan sinyal linguistik yang sama secara diametral berlawanan.
-
-Uji statistik Mann-Whitney U mengkonfirmasi bahwa ulasan deceptive DOSC secara signifikan lebih kaya pronomina orang pertama dibandingkan ulasan truthful (U = 206.530, p = 1.77 × 10⁻²¹, ukuran efek r = -0.3266, efek medium). Temuan ini konsisten dengan teori penipuan Pennebaker (2003) yang menyatakan bahwa penipu menggunakan lebih banyak referensi diri untuk membangun kredibilitas melalui fabrikasi narasi personal.
-
-### 4.3 Asimetri Transfer Transformer
-
-B_bert (dilatih pada 1.120 ulasan hotel DOSC) mentransfer secara moderat ke Amazon dengan mempertahankan Fake recall = 0.7725 dan Genuine recall = 0.4058, sementara A_bert (dilatih pada 28.307 ulasan Amazon) kolaps pada DOSC dengan Fake recall = 0.0688 (149 dari 160 ulasan palsu diprediksi sebagai asli). Asimetri ini menunjukkan bahwa representasi kontekstual BERT yang dilatih pada pola penipuan manusia menangkap fitur semantik yang sebagian relevan dengan artefak generasi AI, tetapi sebaliknya tidak berlaku.
-
-### 4.4 Studi Ablasi: Masking Entitas Geografis
-
-Untuk menguji apakah kegagalan transfer disebabkan oleh kosakata geografis spesifik-domain (chicago, nama hotel), seluruh 3.200 kemunculan entitas di-mask dengan token `[LOCATION]` dan model B_logreg dilatih ulang. Cross F1 bergeser dari 0.1709 menjadi 0.1200 (ΔF1 = -0.0509), mengkonfirmasi bahwa confounding geografis bukan penyebab utama—hambatan dominan beroperasi pada level psikolinguistik.
-
-### 4.5 Studi Ablasi: Kalibrasi Ambang Keputusan
-
-Statistik J Youden diterapkan untuk menentukan ambang optimal τ* pada split validasi dalam-domain. Untuk keempat model probabilistik, kalibrasi ambang gagal menyelamatkan kinerja lintas-domain: A_logreg tetap F1 = 0.0000, dan B_bert turun dari 0.6549 menjadi 0.5089. Ini membuktikan bahwa kegagalan bersifat representasional (ruang fitur ortogonal), bukan desisional (ambang yang salah).
-
----
-
-## 8.3 Bab 5: Kesimpulan dan Saran
-
-### 5.1 Kesimpulan
-
-Penelitian ini menghasilkan tiga kontribusi utama:
-
-1. **Bukti empiris kegagalan generalisasi lintas-paradigma**: Model deteksi ulasan palsu yang dilatih pada satu paradigma penipuan (AI-generated atau human-deceptive) tidak dapat diandalkan untuk mendeteksi paradigma lainnya, dengan degradasi ΔF1 mencapai 0.9578 (kegagalan total).
-
-2. **Identifikasi mekanisme kegagalan—Feature-Distribution Mismatch**: Inversi polaritas pronomina orang pertama (w_i = -4.97 di Amazon vs. +1.79 di DOSC, p < 10⁻²¹) merupakan hambatan transfer dominan yang tidak dapat diatasi melalui masking entitas maupun kalibrasi ambang keputusan.
-
-3. **Keunggulan parsial representasi transformer**: B_bert menunjukkan bahwa representasi kontekstual BERT mampu menangkap sebagian pola penipuan lintas-domain (Cross F1 = 0.6549, ΔF1 = 0.1496), membuka jalur menuju arsitektur deteksi multi-paradigma.
-
-### 5.2 Saran dan Arah Penelitian Masa Depan
-
-#### 5.2.1 Arsitektur Dual-Head untuk Deteksi Multi-Paradigma
-
-Berdasarkan temuan bahwa BERT menunjukkan transfer parsial, direkomendasikan arsitektur **Dual-Head Classifier**:
+Based on the finding that BERT shows partial transfer, we recommend a **Dual-Head Architecture** for production:
 
 ```
                     ┌─────────────────────┐
@@ -530,22 +350,45 @@ Berdasarkan temuan bahwa BERT menunjukkan transfer parsial, direkomendasikan ars
              └─────────────┘      └─────────────┘
 ```
 
-Encoder bersama mempelajari representasi fitur umum, sementara dua head klasifikasi terpisah mengkhususkan diri pada masing-masing paradigma penipuan. Pendekatan ini mengatasi Feature-Distribution Mismatch dengan memungkinkan adaptasi level keputusan tanpa mengorbankan representasi bersama.
+**Rationale**: Shared encoder learns common features; separate heads specialize per fraud paradigm. This overcomes the Feature-Distribution Mismatch without sacrificing shared representation learning.
 
-#### 5.2.2 Aplikasi pada Marketplace Indonesia
-
-Temuan penelitian ini langsung dapat diterapkan pada platform e-commerce Indonesia (Tokopedia, Shopee, Bukalapak) melalui:
-1. **Encoder IndoBERT** sebagai pengganti bert-base-uncased untuk menangkap nuansa bahasa Indonesia.
-2. **Protokol karantina kebocoran data** sebagai template untuk membangun dataset ulasan palsu Indonesia yang bebas kontaminasi.
-3. **Framework evaluasi lintas-domain** untuk menguji ketahanan detektor terhadap ulasan palsu AI-generated dan ulasan palsu dari sindikat penipuan berbayar.
-
-#### 5.2.3 Ekstensi Ke Frontier LLM
-
-Studi lanjutan direkomendasikan untuk menguji generalisasi detektor terhadap ulasan yang dihasilkan oleh GPT-4, Claude, Gemini, dan model open-source (LLaMA, Mistral), menggunakan matriks transfer multi-sumber yang diperluas dari desain 2-dataset menjadi desain N-dataset.
+**Indonesian marketplace application**: Replace `bert-base-uncased` with **IndoBERT** for Tokopedia/Shopee deployment.
 
 ---
 
-## Appendix A: Repository Structure
+## 14. Data Splits & Checksums
+
+| Dataset | Split | N | Label=0 | Label=1 | Ratio |
+|---------|-------|---|---------|---------|-------|
+| Amazon | Train | 28,307 | 14,140 | 14,167 | 70.0% |
+| Amazon | Val | 4,035 | 1,998 | 2,037 | 10.0% |
+| Amazon | Test | 8,090 | 4,019 | 4,071 | 20.0% |
+| DOSC | Train | 1,116 | 556 | 560 | 69.9% |
+| DOSC | Val | 160 | 80 | 80 | 10.0% |
+| DOSC | Test | 320 | 160 | 160 | 20.0% |
+
+**SHA-256 Checksums**:
+- `amazon_splits.json`: `c6147bc274eb6ea6e6ca1cabef76efed...`
+- `dosc_splits.json`: `90003c4751e69ae1ce2bcab7bffe685e...`
+
+---
+
+## 15. Verification Summary
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| 48/48 pytest unit tests | ✅ PASSED | `pytest tests/ -v` exit code 0 |
+| 18/18 empirical truth checks | ✅ PASSED | `scripts/verify_research_truth.py` |
+| 6/6 models load & reproduce | ✅ VERIFIED | `transfer_matrix.csv` matches recorded values |
+| Split SHA-256 checksums match | ✅ VERIFIED | `amazon_splits.json`: c6147bc..., `dosc_splits.json`: 90003c4... |
+| Source column absent from DOSC | ✅ VERIFIED | T1.4 + `test_dedup.py::test_source_column_absent` |
+| Zero prefix group overlap | ✅ VERIFIED | T1.5/T1.6 + `test_splitter.py::test_zero_prefix_overlap_*` |
+| Ablation 1: Entity masking | ✅ COMPLETE | ΔF1_cross = -0.0509 |
+| Ablation 2: Threshold calibration | ✅ COMPLETE | 0/4 models rescued |
+
+---
+
+## 16. Repository Structure
 
 ```
 fake_review_detection/
@@ -580,20 +423,347 @@ fake_review_detection/
 └── LICENSE (MIT)
 ```
 
-## Appendix B: Verification Registry
+---
+---
+---
 
-| Check | Status | Evidence |
-|-------|--------|----------|
-| 48/48 pytest unit tests | ✅ PASSED | `pytest tests/ -v` exit code 0 |
-| 18/18 empirical truth checks | ✅ PASSED | `scripts/verify_research_truth.py` |
-| 6/6 models load & reproduce | ✅ VERIFIED | `transfer_matrix.csv` matches recorded values |
-| Split SHA-256 checksums match | ✅ VERIFIED | `amazon_splits.json`: c6147bc..., `dosc_splits.json`: 90003c4... |
-| Source column absent from DOSC | ✅ VERIFIED | T1.4 + `test_dedup.py::test_source_column_absent` |
-| Zero prefix group overlap | ✅ VERIFIED | T1.5/T1.6 + `test_splitter.py::test_zero_prefix_overlap_*` |
-| Ablation 1: Entity masking | ✅ COMPLETE | ΔF1_cross = -0.0509 |
-| Ablation 2: Threshold calibration | ✅ COMPLETE | 0/4 models rescued |
+# ═══════════════════════════════════════════════════════════════
+# PART II: KEPUTUSAN & TEMUAN KUNCI (BAHASA INDONESIA)
+# ═══════════════════════════════════════════════════════════════
 
 ---
 
-*End of Master Research Monograph*  
-*Generated: 2026-09-10 | Author: Tiffany Christabel Anggriawan | Universitas Ciputra Surabaya*
+## 1. Masalah Penelitian & Motivasi
+
+**Pertanyaan Inti**: Dapatkah model deteksi ulasan palsu yang dilatih pada satu jenis penipuan (AI-generated atau human-deceptive) menggeneralisasi untuk mendeteksi jenis penipuan lainnya?
+
+**Mengapa Ini Penting**:
+- Platform e-commerce menghadapi dua modalitas penipuan yang berbeda: ulasan palsu yang dihasilkan AI (GPT-2, GPT-4, LLaMA) dan ulasan palsu yang ditulis manusia (sindikat buzzer bayaran).
+- Sebagian besar model yang dipublikasikan melaporkan akurasi dalam-domain yang tinggi (F1 > 0,90) tetapi tidak pernah diuji pada jenis penipuan yang belum pernah dilihat.
+- Jika generalisasi lintas-domain gagal, mengandalkan detektor tunggal memberikan rasa aman yang palsu.
+
+**Rumusan Masalah**:
+
+| ID | Pertanyaan Penelitian |
+|----|----------------------|
+| RQ1 | Apakah model deteksi yang dilatih pada ulasan palsu AI-generated mampu menggeneralisasi ke ulasan manipulatif manusia, dan sebaliknya? |
+| RQ2 | Apa mekanisme kegagalan linguistik spesifik yang menyebabkan degradasi kinerja lintas-dataset? |
+| RQ3 | Dapatkah representasi kontekstual transformer (BERT) mengatasi kegagalan lintas-domain lebih baik dibandingkan fitur TF-IDF permukaan? |
+
+---
+
+## 2. Keputusan Kunci: Pemilihan Dataset & Penolakan Zenodo
+
+### Keputusan: Menolak Dataset Zenodo 75K Indonesia
+
+**Rencana awal**: Menggunakan dataset ulasan Tokopedia berbahasa Indonesia sebanyak 75.000 baris dari Zenodo.
+
+**Alasan penolakan** (4 cacat fatal ditemukan saat audit forensik):
+
+1. **Kebocoran target 100% via `verified_purchase`**: Kolom boolean ini memisahkan label secara sempurna. Semua classifier mencapai F1 ≈ 1,0 tanpa mempelajari linguistik.
+2. **Kebocoran target 100% via `source`**: Field `source` (API scrape vs. input manual) merupakan proxy langsung untuk label.
+3. **126 duplikat lintas-fold**: Teks identik muncul di split train dan test, menginflasi metrik.
+4. **Tidak ada ground truth penipuan**: Label "palsu" ditetapkan secara algoritmik dari heuristik metadata, bukan dari verifikasi niat menipu.
+
+**Konsekuensi**: Penelitian beralih ke dua dataset berbahasa Inggris yang telah di-benchmark secara internasional dan telah di-peer-review.
+
+### Keputusan: Menggunakan Amazon Synthetic + DOSC sebagai Perbandingan Terkontrol
+
+| Properti | Dataset A: Amazon Synthetic | Dataset B: DOSC |
+|----------|---------------------------|-----------------|
+| Sumber | Salminen et al. (2022) | Ott et al. (2011) |
+| Jenis penipuan | AI-generated (GPT-2) | Ditulis manusia (pekerja MTurk) |
+| Domain | Produk Amazon multi-kategori | Ulasan hotel Chicago |
+| Total baris | 40.432 | 1.596 (setelah deduplikasi) |
+| Keseimbangan | 20.216 palsu / 20.216 asli | 800 palsu / 796 asli |
+
+**Rasional**: Pasangan ini menciptakan eksperimen natural terkontrol — dua dataset dari paradigma penipuan yang berbeda secara fundamental, memungkinkan isolasi kesenjangan generalisasi.
+
+---
+
+## 3. Keputusan Kunci: Pencegahan Kebocoran Data
+
+### 3.1 Penghapusan Kolom `source` DOSC
+
+**Masalah**: Kolom `source` DOSC memisahkan MTurk (deceptive) dari TripAdvisor (truthful) secara sempurna — kebocoran target 100%.
+
+**Keputusan**: Hapus `source` pada baris pertama ingesti data, sebelum pemrosesan apapun.
+
+**Verifikasi**: Divalidasi dalam unit test (`test_dedup.py::test_source_column_absent`) dan suite verifikasi (T1.4).
+
+### 3.2 Pemisahan Prefix-Group Amazon
+
+**Masalah**: GPT-2 menghasilkan ulasan dari template prompt yang sama. Ulasan dengan awalan template yang sama bisa bocor ke split train dan test.
+
+**Keputusan**: Ekstrak prefix 80 karakter → hash menjadi `group_id` → gunakan `GroupShuffleSplit` untuk memastikan nol tumpang tindih grup antar train/val/test.
+
+**Verifikasi**: Audit sliding window 50 karakter: 32/8.090 test = 0,40% (duplikat natural yang tidak berbahaya).
+
+### 3.3 Penghapusan Duplikat DOSC
+
+**Temuan**: 4 duplikat scrape TripAdvisor ditemukan dalam 1.600 baris mentah.
+
+**Keputusan**: Hapus keempat duplikat → 1.596 baris bersih (800 deceptive + 796 truthful).
+
+---
+
+## 4. Keputusan Kunci: Arsitektur Model
+
+### 4.1 Ekstraksi Fitur: Dual TF-IDF
+
+**Keputusan**: Menggabungkan TF-IDF level kata dan level karakter menjadi satu matriks sparse (hingga 50.000 dimensi).
+
+| Komponen | Analyzer | Rentang N-gram | Fitur Maks | Sublinear TF |
+|----------|----------|---------------|------------|-------------|
+| Word TF-IDF | word | (1, 2) | 30.000 | Ya |
+| Char TF-IDF | char | (3, 5) | 20.000 | Ya |
+| **Gabungan** | — | — | **50.000** | — |
+
+**Rasional**: N-gram kata menangkap isyarat semantik/leksikal; n-gram karakter menangkap pola morfologis/stilistik.
+
+### 4.2 Classifier Klasikal: LogReg + LinearSVC
+
+**Keputusan CV yang kritis**:
+- Model Amazon (A_*): `GroupKFold` (k=5) pada `group_id` — mencegah kebocoran template dalam fold CV.
+- Model DOSC (B_*): `StratifiedKFold` (k=5) dengan stratifikasi gabungan pada `target × polarity`.
+
+### 4.3 Transformer: Fine-Tuning BERT
+
+**Keputusan**: Menggunakan `bert-base-uncased` dengan strategi regularisasi berbeda per dataset.
+
+| Parameter | Amazon (A_bert) | DOSC (B_bert) | Alasan |
+|-----------|----------------|---------------|--------|
+| Dropout Classifier | 0,1 | **0,3** | DOSC 25× lebih kecil → regularisasi lebih berat |
+| Lapisan Encoder Beku | 6 | **8** | Mencegah overfitting pada dataset DOSC yang kecil |
+| Perangkat Keras | Apple Silicon MPS | Apple Silicon MPS | Kelayakan pelatihan lokal |
+| Panjang Maks | 256 token | 256 token | Mencakup >95% ulasan |
+| Learning Rate | 2 × 10⁻⁵ | 2 × 10⁻⁵ | Standar fine-tuning BERT |
+| Epoch | 4 (early stopping) | 4 (early stopping) | — |
+
+---
+
+## 5. Hasil Empiris: Matriks Transfer
+
+| Model | Train → Eval | Within F1 | Cross F1 | ΔF1 | Within AUC | Cross AUC | Kategori |
+|-------|-------------|-----------|----------|-----|-----------|-----------|----------|
+| A_logreg | Amazon → DOSC | 0,9578 | **0,0000** | 0,9578 | 0,9920 | 0,5629 | Katastrofik |
+| A_svm | Amazon → DOSC | 0,9573 | **0,0000** | 0,9573 | 0,9921 | 0,5827 | Katastrofik |
+| A_bert | Amazon → DOSC | 0,9305 | 0,1236 | 0,8069 | 0,9867 | 0,5668 | Katastrofik |
+| B_logreg | DOSC → Amazon | 0,9177 | 0,1709 | 0,7468 | 0,9675 | 0,4452 | Katastrofik |
+| B_svm | DOSC → Amazon | 0,9108 | 0,1619 | 0,7489 | 0,9680 | 0,4343 | Katastrofik |
+| B_bert | DOSC → Amazon | 0,8045 | **0,6549** | 0,1496 | 0,8849 | 0,6131 | **Moderat** |
+
+### Temuan Kunci
+
+1. **Seluruh model klasikal gagal secara katastrofik** (ΔF1 > 0,74).
+2. **B_bert adalah satu-satunya model dengan transfer moderat** (Cross F1 = 0,6549).
+3. **Transfer bersifat asimetris**: DOSC→Amazon lebih baik daripada Amazon→DOSC, meskipun Amazon memiliki 25× lebih banyak data pelatihan.
+4. **ROC-AUC B_logreg = 0,4452 (di bawah peluang acak)**: Inversi peringkat sistematis — model secara konsisten salah secara terstruktur.
+
+---
+
+## 6. Temuan Forensik #1: Feature-Distribution Mismatch (Inversi Polaritas Pronomina)
+
+**Akar penyebab kegagalan transfer katastrofik.**
+
+Fitur linguistik yang sama (`word__i`, pronomina orang pertama "I") memiliki asosiasi yang **berlawanan** di setiap dataset:
+
+| Fitur | A_logreg (Amazon) | B_logreg (DOSC) | Δw |
+|-------|-------------------|-----------------|-----|
+| `word__i` | **-4,9735** (isyarat genuine) | **+1,7942** (isyarat deceptive) | **6,7677** |
+| `word__my` | **-3,8059** (isyarat genuine) | **+2,3683** (isyarat deceptive) | **6,1742** |
+
+**Mengapa ini terjadi**:
+- Di Amazon: GPT-2 menghasilkan ulasan palsu yang impersonal dan berfokus pada produk. Konsumen asli menggunakan "I" dan "my" secara natural → Pronomina = asli.
+- Di DOSC: Penipu manusia memfabrikasi narasi personal untuk membangun kredibilitas (teori penipuan Pennebaker) → Pronomina = palsu.
+- Ketika A_logreg menemui ulasan deceptive DOSC yang kaya pronomina, model tersebut dengan yakin mengklasifikasikannya sebagai asli → F1 = 0,0000.
+
+**Konfirmasi statistik (Mann-Whitney U)**:
+
+| Perbandingan | U | p-value | Ukuran Efek (r) |
+|-------------|---|---------|----------------|
+| Amazon: Palsu vs Asli | 2.407.497 | 2,69 × 10⁻²⁹ | +0,2037 (kecil) |
+| DOSC: Deceptive vs Truthful | 206.530 | 1,77 × 10⁻²¹ | -0,3266 (medium) |
+
+**Frekuensi pronomina lintas kuadran**:
+
+| Kuadran | N | Mean Rasio P1 | Std | Median |
+|---------|---|--------------|-----|--------|
+| Amazon Palsu (CG/GPT-2) | 2.000 | 0,0655 | 0,0465 | 0,0639 |
+| Amazon Asli (OR) | 2.000 | 0,0502 | 0,0441 | 0,0476 |
+| DOSC Deceptive (MTurk) | 560 | 0,0673 | 0,0318 | 0,0699 |
+| DOSC Truthful (TripAdvisor) | 556 | 0,0508 | 0,0267 | 0,0500 |
+
+---
+
+## 7. Temuan Forensik #2: Pembuktian F1 = 0,0000
+
+**Ini bukan bug — ini merupakan konsekuensi matematis yang tak terhindarkan.**
+
+A_logreg memberikan skor P(fake) pada seluruh 160 ulasan palsu DOSC:
+
+| Statistik | Nilai |
+|-----------|-------|
+| Mean P(fake) | 0,0043 |
+| Median P(fake) | 0,0003 |
+| Maksimum P(fake) | **0,0988** |
+| Sampel di bawah threshold (0,50) | **160/160 (100%)** |
+
+**Uji Kolmogorov-Smirnov** (skor palsu Amazon vs skor palsu DOSC):
+- D_KS = 0,9907, p = 9,35 × 10⁻²⁵⁴ — hampir nol tumpang tindih antar distribusi.
+
+**Pembuktian formal**:
+
+$$\forall x \in \mathcal{D}_{\text{DOSC}}^{\text{fake}}: P_{\text{A\_logreg}}(\text{fake} | x) < 0,10$$
+$$\implies \hat{y}(x) = 0 \quad \forall \tau \geq 0,10 \implies \text{TP} = 0 \implies F_1 = 0 \quad \blacksquare$$
+
+**Verifikasi silang**: A_svm (algoritma yang sepenuhnya berbeda) menghasilkan pola prediksi all-zeros yang identik → kegagalan bersifat feature-driven, bukan classifier-specific.
+
+---
+
+## 8. Temuan Forensik #3: Geometri Ruang Fitur Ortogonal
+
+**Korelasi rank Spearman** antara vektor bobot fitur A_logreg dan B_logreg:
+- ρ = 0,0167, R² = 0,00028
+
+Kedua model mempelajari fitur yang **sama sekali berbeda**. Ruang fitur bersifat ortogonal.
+
+---
+
+## 9. Temuan Kunci: Asimetri Transfer Transformer
+
+| Arah | Cross F1 | Fake Recall | Genuine Recall | Penjelasan |
+|------|----------|-------------|----------------|------------|
+| B_bert → Amazon | **0,6549** | 0,7725 | 0,4058 | Pola penipuan manusia sebagian tumpang tindih dengan artefak generasi AI |
+| A_bert → DOSC | 0,1236 | 0,0688 | 0,9563 | Artefak AI terkunci pada domain; 149/160 ulasan palsu diklasifikasikan sebagai asli |
+
+**Matriks konfusi**:
+
+A_bert pada DOSC (lintas-domain):
+```
+              Pred Genuine  Pred Fake
+True Genuine       153           7
+True Fake          149          11
+```
+
+B_bert pada Amazon (lintas-domain):
+```
+              Pred Genuine  Pred Fake
+True Genuine      1631        2388
+True Fake          926        3145
+```
+
+**Wawasan kunci**: Ukuran dataset pelatihan saja tidak menentukan transferabilitas. B_bert (dilatih pada 1.120 sampel) mengungguli A_bert (dilatih pada 28.307 sampel) dalam transfer lintas-domain karena **keselarasan ruang fitur lebih penting daripada volume data**.
+
+**Taksonomi Kesalahan**:
+
+| Jenis Kesalahan | A→B | B→A |
+|-----------------|-----|-----|
+| Template Absence (istilah domain hilang) | **82,5%** | 0,0% |
+| Length/Complexity Mismatch | 16,9% | **62,5%** |
+| Stylistic Divergence | 0,0% | **35,7%** |
+| Semantic Similarity (kasus ambigu) | 0,6% | 1,2% |
+| Vocabulary Mismatch (OOV) | 0,0% | 0,5% |
+
+---
+
+## 10. Studi Ablasi #1: Masking Entitas Geografis
+
+**Pertanyaan**: Apakah kegagalan B_logreg disebabkan oleh kosakata spesifik Chicago?
+
+**Metode**: Ganti seluruh 3.200 kemunculan dari 21 entitas geografis (chicago, hilton, hyatt, dll.) dengan `[LOCATION]`. Latih ulang B_logreg.
+
+**Hasil**:
+
+| Model | Within F1 | Cross F1 |
+|-------|-----------|----------|
+| B_logreg (asli) | 0,9177 | 0,1709 |
+| B_logreg_masked | 0,9045 | **0,1200** (ΔF1 = -0,0509, *lebih buruk*) |
+
+**Pergeseran bobot fitur setelah masking**:
+- `word__chicago` (aslinya peringkat #1, bobot 3,04) → tereliminasi
+- `word__my` (peringkat #3, bobot 2,40) dan `word__i` (peringkat #6, bobot 1,74) → **tetap dominan**
+
+**Kesimpulan**: Masking geografis tidak dapat menyelamatkan transfer. Kegagalan beroperasi pada level psikolinguistik, bukan pada level topik.
+
+---
+
+## 11. Studi Ablasi #2: Kalibrasi Ambang Youden's J
+
+**Pertanyaan**: Dapatkah penyesuaian ambang keputusan memperbaiki penurunan lintas-domain?
+
+**Metode**: Hitung ambang optimal τ* menggunakan statistik J Youden: J(τ) = TPR(τ) − FPR(τ), τ* = argmax J(τ).
+
+**Hasil**:
+
+| Model | τ* | J_max | Cross F1 (τ=0,50) | Cross F1 (τ*) | ΔF1 |
+|-------|----|------:|-------------------|--------------|-----|
+| A_logreg | 0,5022 | 0,9154 | 0,0000 | 0,0000 | +0,0000 |
+| B_logreg | 0,5552 | 0,8375 | 0,1709 | 0,1148 | -0,0561 |
+| A_bert | 0,9362 | 0,8858 | 0,1236 | 0,0706 | -0,0530 |
+| B_bert | 0,7415 | 0,6500 | 0,6549 | 0,5089 | -0,1460 |
+
+**Kesimpulan**: Kalibrasi ambang **gagal menyelamatkan model manapun** — justru memperburuk semua model. Kegagalan bersifat **representasional, bukan desisional**: representasi fitur internal model menempati ruang yang ortogonal antar dataset.
+
+---
+
+## 12. Rekomendasi Arsitektur: Dual-Head Classifier
+
+Berdasarkan temuan bahwa BERT menunjukkan transfer parsial, direkomendasikan arsitektur **Dual-Head**:
+
+```
+                    ┌─────────────────────┐
+                    │  Shared Encoder     │
+                    │  (BERT / IndoBERT)  │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │                     │
+             ┌──────▼──────┐      ┌──────▼──────┐
+             │  Head A:    │      │  Head B:    │
+             │  Detektor   │      │  Detektor   │
+             │  Penipuan   │      │  Penipuan   │
+             │  AI         │      │  Manusia    │
+             └─────────────┘      └─────────────┘
+```
+
+**Aplikasi marketplace Indonesia**: Gunakan **IndoBERT** sebagai encoder bersama untuk deployment di Tokopedia/Shopee/Bukalapak.
+
+---
+
+## 13. Jawaban Terhadap Rumusan Masalah
+
+### RQ1: Generalisasi Lintas-Domain
+
+**Jawaban**: **Tidak**. Model deteksi yang dilatih pada satu paradigma penipuan tidak dapat diandalkan untuk mendeteksi paradigma lainnya. Degradasi ΔF1 mencapai 0,9578 (kegagalan total). Satu-satunya pengecualian parsial adalah B_bert (ΔF1 = 0,1496, transfer moderat).
+
+### RQ2: Mekanisme Kegagalan Linguistik
+
+**Jawaban**: Tiga mekanisme teridentifikasi:
+1. **Inversi Polaritas Pronomina** — fitur yang sama memiliki asosiasi berlawanan (Δw = 6,77).
+2. **Geometri ruang fitur ortogonal** (Spearman ρ = 0,017).
+3. **Kolaps distribusi probabilitas** (KS D = 0,99).
+
+### RQ3: Ketahanan Representasi Transformer
+
+**Jawaban**: **Parsial**. BERT menunjukkan keunggulan transfer yang signifikan: B_bert mempertahankan Cross F1 = 0,6549 vs B_logreg 0,1709 (peningkatan +0,4840). Namun, BERT tidak kebal — A_bert tetap kolaps (Cross F1 = 0,1236). Representasi kontekstual membantu tetapi tidak menghilangkan Feature-Distribution Mismatch.
+
+---
+
+## 14. Ringkasan Verifikasi
+
+| Pemeriksaan | Status | Bukti |
+|-------------|--------|-------|
+| 48/48 unit test pytest | ✅ LULUS | `pytest tests/ -v` exit code 0 |
+| 18/18 pemeriksaan kebenaran empiris | ✅ LULUS | `scripts/verify_research_truth.py` |
+| 6/6 model dimuat & direproduksi | ✅ TERVERIFIKASI | `transfer_matrix.csv` sesuai dengan nilai tercatat |
+| Checksum SHA-256 split cocok | ✅ TERVERIFIKASI | `amazon_splits.json`: c6147bc..., `dosc_splits.json`: 90003c4... |
+| Kolom source tidak ada di DOSC | ✅ TERVERIFIKASI | T1.4 + `test_dedup.py::test_source_column_absent` |
+| Nol tumpang tindih grup prefix | ✅ TERVERIFIKASI | T1.5/T1.6 + `test_splitter.py::test_zero_prefix_overlap_*` |
+| Ablasi 1: Masking entitas | ✅ SELESAI | ΔF1_cross = -0,0509 |
+| Ablasi 2: Kalibrasi ambang | ✅ SELESAI | 0/4 model terselamatkan |
+
+---
+
+*Akhir Master Research Monograph*  
+*Dibuat: September 2026 | Penulis: Tiffany Christabel Anggriawan | Information Systems for Business, Universitas Ciputra Surabaya*
